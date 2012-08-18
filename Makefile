@@ -1,5 +1,5 @@
 all:
-	ocamlbuild logC.native
+	ocamlbuild parser/logC.native
 
 clean:
 	ocamlbuild -clean
