@@ -16,7 +16,7 @@ open LogAst
         HASH
         EOF
 
-%token <int>   NUM
+%token <int64>   NUM
 
 %token <char>  CHARI
                CHARO

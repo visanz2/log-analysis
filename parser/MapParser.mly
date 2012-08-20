@@ -8,7 +8,7 @@ open MapAst
         HASH
         EOF
 
-%token <int>   NUM
+%token <int64>   NUM
 
 %token <char>  SCOMP
 			   PCOMP

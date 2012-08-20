@@ -40,7 +40,7 @@ rule token = parse
   | '#'             {inc_lnum lexbuf; HASH}
   | ws+             {token lexbuf}
   | nl+             {token lexbuf}
-  | intval as num   {NUM(int_of_string num)}  
+  | intval as num   {NUM(Int64.of_string num)}  
   | eof             {EOF}
   | _              {failwith((Lexing.lexeme lexbuf)  
                     ^ ": syntax error at " 

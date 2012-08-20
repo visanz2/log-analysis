@@ -10,6 +10,7 @@ let contains s1 s2 =
   in
     try ignore (Str.search_forward re s1 0); true
     with Not_found -> false
+;;
 
 (* Search the log fiales and the map file with one direction *)
 let searchfiles direction numbernode =
@@ -32,6 +33,7 @@ let rec getlogfile ind listfile =
       listfile
     )
 in getlogfile 0 [direction ^ "n" ^numbernode ^"_tasks.map"]
+;;
 
 (* PRINCIPAL FUNCTION OF THIS PROGRAM  *)
 let main () = 
@@ -65,7 +67,7 @@ let main () =
                           let line = curr.Lexing.pos_lnum in
                             let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in
                               let tok = Lexing.lexeme lexbuf in
-let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nth listfile ind) in
+                                let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nth listfile ind) in
                           raise LogAst.Compilation_Error
                       end in 
                     let _ = LogAst.codegen the_ast in
@@ -118,7 +120,7 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
             match (input_line stdin)  with 
               | "0"-> Printf.printf "THE END"; exit 0
               | "1"-> (* Menu 1 - Search execution time of ended task for Boxname *)  
-                      Printf.printf "\n What task do you want to search? (write the Boxname)\n";
+                      Printf.printf "\n What task do you want to search? (write the Boxname)\n" ;
                       flush stdout;
                       let taskidsearch = t_search_boxname (List.nth listmap 0) (input_line stdin) []  in
                         let rec searchexecutiontime var =
@@ -130,19 +132,20 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                             )
                             else
                             (
-                              menu (ind+1);
+                              menu (ind+1)
                             )                          )
                           else
                           (
-                            Printf.printf "Impossible to find the task in the load log files.\n"
+                            Printf.printf "Impossible to find the task in the load log files.\n";
+                            menu (ind+1)
                           )
                         in searchexecutiontime 0 
 
               | "2"-> (* Menu 2 - Search execution time of ended task for Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try read_int() 
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; -1
+                        let taskidsearch = try  Int64.of_string(input_line stdin) 
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -158,7 +161,8 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                             )
                             else
                             (
-                              Printf.printf "Impossible to find the task in the load log files.\n"
+                              Printf.printf "Impossible to find the task in the load log files.\n";
+                              menu (ind+1)
                             )
                           in searchexecutiontime 0 
               | "3"-> (* Menu 3 - Search execution time of blocked task for Boxname *)  
@@ -179,15 +183,16 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                           )
                           else
                           (
-                            Printf.printf "Impossible to find the task in the load log files.\n"
+                            Printf.printf "Impossible to find the task in the load log files.\n";
+                            menu (ind+1)
                           )
                         in searchexecutiontime 0 
 
               | "4"-> (* Menu 4 - Search execution time of blocked task for Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try read_int() 
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; -1
+                        let taskidsearch = try  Int64.of_string(input_line stdin)  
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -203,7 +208,8 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                             )
                             else
                             (
-                              Printf.printf "The task is never blocked or it's impossible to find in the load log files.\n"
+                              Printf.printf "The task is never blocked or it's impossible to find in the load log files.\n";
+                              menu (ind+1)
                             )
                           in searchexecutiontime 0 
               | "5"-> (* Menu 5 - List of time of read's record time for task searched with Boxname *)  
@@ -224,15 +230,16 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                           )
                           else
                           (
-                            Printf.printf "Impossible to find the task in the load log files.\n"
+                            Printf.printf "Impossible to find the task in the load log files.\n";
+                            menu (ind+1)
                           )
                         in searchexecutiontime 0 
 
               | "6"-> (* Menu 6 - List of time of read's record time for task searched with Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try read_int() 
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; -1
+                        let taskidsearch = try  Int64.of_string(input_line stdin) 
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -248,7 +255,8 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                             )
                             else
                             (
-                              Printf.printf "Impossible to find the task in the load log files.\n"
+                              Printf.printf "Impossible to find the task in the load log files.\n";
+                              menu (ind+1)
                             )
                           in searchexecutiontime 0 
               | "7"-> (* Menu 7 - List of time of write's record time for task searched with Boxname *)  
@@ -269,15 +277,16 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                           )
                           else
                           (
-                            Printf.printf "Impossible to find the task in the load log files.\n"
+                            Printf.printf "Impossible to find the task in the load log files.\n";
+                            menu (ind+1)
                           )
                         in searchexecutiontime 0 
 
               | "8"-> (* Menu 8 - List of time of read's record time for task searched with Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try read_int() 
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; -1
+                        let taskidsearch = try  Int64.of_string(input_line stdin)  
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -293,7 +302,8 @@ let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nt
                             )
                             else
                             (
-                              Printf.printf "Impossible to find the task in the load log files.\n"
+                              Printf.printf "Impossible to find the task in the load log files.\n";
+                              menu (ind+1)
                             )
                           in searchexecutiontime 0 
 

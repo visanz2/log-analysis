@@ -8,24 +8,24 @@ in raise Compilation_Error
 
 (* - AST - *)
 
-type mess_entry = MessEntry of int (* TimeStamp *)
+type mess_entry = MessEntry of int64 (* TimeStamp *)
                            * char (* IO *)
-                           * int (* Message ID  -> Node ID  *)
-                           * int (* Message ID  -> Local ID *)
+                           * int64 (* Message ID  -> Node ID  *)
+                           * int64 (* Message ID  -> Local ID *)
 
-type list_tag_value = TagValue of int (* Tag Value *)
+type list_tag_value = TagValue of int64 (* Tag Value *)
 
-type more_information = MoreInformation of int (* Tag Id *)
+type more_information = MoreInformation of int64 (* Tag Id *)
                       * list_tag_value list (* List of simbolic name*)
 
 type mess_trace  = MessTrace of mess_entry (* Message Entry *) 
                  * more_information (* Mori Information *)
                  | Empty
 
-type stream_entry = StreamEntry of int (* Stream ID *)
+type stream_entry = StreamEntry of int64 (* Stream ID *)
                                  * char (* Mode *)
                                  * char (* State *)
-                                 * int (* Items *)
+                                 * int64 (* Items *)
                                  * char (* Firrst Flags *)
                                  * char (* Second Flags *)
                                  * char (* Third  Flags *)
@@ -35,27 +35,27 @@ type stream_trace = StreamTrace of stream_entry (* Stream Entry *)
                   | Empty
 
 
-type sn_ast = WorkStarted of int (* TimeStamp *)
+type sn_ast = WorkStarted of int64 (* TimeStamp *)
                            * sn_ast
-            | WorkWaited  of int (* TimeStamp *)
-                           * int (* Waiting Stamp *)
+            | WorkWaited  of int64 (* TimeStamp *)
+                           * int64 (* Waiting Stamp *)
                            * sn_ast
-            | WorkEnded   of int (* TimeStamp *)
+            | WorkEnded   of int64 (* TimeStamp *)
                            * sn_ast
-            | TaskBlocked of int (* TimeStamp *)
+            | TaskBlocked of int64 (* TimeStamp *)
                            * char (* Blocked By *)
-                           * int (* Task ID *)
-                           * int (*Execution Time*)
+                           * int64 (* Task ID *)
+                           * int64 (*Execution Time*)
                            * stream_trace list(* Stream Trace *)
                            * sn_ast             
-            | TaskEnded   of int (* TimeStamp *)
-                           * int (* Task ID *)
-                           * int (* Execution Time *)
-                           * int (* Create Time *)
+            | TaskEnded   of int64 (* TimeStamp *)
+                           * int64 (* Task ID *)
+                           * int64 (* Execution Time *)
+                           * int64 (* Create Time *)
                            * stream_trace list(* Stream Trace *)
                            * sn_ast
-            | Information of int (* Waiting count *)
-                           * int (* Total Waiting Time *)
+            | Information of int64 (* Waiting count *)
+                           * int64 (* Total Waiting Time *)
                            * sn_ast
             | Empty
 
@@ -164,10 +164,11 @@ let t_exectime node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
-          if (task_id == taskidsearch) then
+            if (Int64.compare task_id taskidsearch) == 0 then
             (
-              Printf.printf "Ended Task id: %d with real execution time: %d  \n" taskidsearch (tims_stamp-creation_time);
-              Printf.printf "Diference between the real execution time and exectuion time: %d - %d = %d  \n" (tims_stamp-creation_time) exec_time ((tims_stamp-creation_time)-exec_time);
+              Printf.printf "Ended Task id: %Ld with real execution time: %Ld  \n" taskidsearch (Int64.sub tims_stamp creation_time);
+              Printf.printf "Diference between the real execution time and execution time: %Ld - %Ld = %Ld  \n" (Int64.sub tims_stamp creation_time) exec_time 
+              (Int64.sub (Int64.sub tims_stamp creation_time) exec_time);
               true
             )
             else
@@ -182,9 +183,9 @@ let t_blocktime node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskBlocked (tims_stamp, _, task_id, exec_time, _, _) ->  
-          if (task_id == taskidsearch) then
+          if (Int64.compare task_id taskidsearch) == 0 then
             (
-              Printf.printf "Blocked Task id: %d with real execution time in the moment when the task is blocked is: %d  \n" taskidsearch (tims_stamp-exec_time); 
+              Printf.printf "Blocked Task id: %Ld with real execution time in the moment when the task is blocked is: %Ld  \n" taskidsearch (Int64.sub tims_stamp exec_time); 
               let _ = codegen_ (ind+1) (node_succs node)in 
                 true
             )
@@ -216,7 +217,7 @@ let list_of_read_packets l =
   match l with
     | StreamTrace (streamentry) -> 
         if ( (streamentry_mode streamentry) == 'r') then
-          Printf.printf " StreamID: %d - State: %s - items: %d\n" (streamentry_streanid streamentry) 
+          Printf.printf " StreamID: %Ld - State: %s - items: %Ld\n" (streamentry_streanid streamentry) 
           (state_to_str(streamentry_state streamentry)) (streamentry_items streamentry)
         else ()
     | ST_MessTrace _ -> ()
@@ -227,7 +228,7 @@ let list_of_write_packets l =
   match l with
     | StreamTrace (streamentry) -> 
         if ( (streamentry_mode streamentry) == 'w') then
-          Printf.printf " StreamID: %d - State: %s - items: %d\n" (streamentry_streanid streamentry) 
+          Printf.printf " StreamID: %Ld - State: %s - items: %Ld\n" (streamentry_streanid streamentry) 
           (state_to_str(streamentry_state streamentry)) (streamentry_items streamentry)
         else ()
     | ST_MessTrace _ -> ()
@@ -239,10 +240,10 @@ let list_of_write_packets l =
 let list_of_specified_packets l idsearch= 
   match l with
     | StreamTrace (streamentry) -> 
-        if ( (streamentry_streanid streamentry) == idsearch) then
+        if ( (Int64.compare (streamentry_streanid streamentry) idsearch) == 0 ) then
         (
           "\n Mode: " ^ (mode_to_str (streamentry_mode streamentry)) ^ " - State: " ^ (state_to_str(streamentry_state streamentry)) ^ 
-          " - items: " ^ (string_of_int (streamentry_items streamentry)) ^" - Flags: " ^ Char.escaped (streamentry_firstflag streamentry)
+          " - items: " ^ (Int64.to_string (streamentry_items streamentry)) ^" - Flags: " ^ Char.escaped (streamentry_firstflag streamentry)
           ^ Char.escaped (streamentry_secondflag streamentry) ^ Char.escaped (streamentry_thirdflag streamentry) ^ "\n"  
         )
         else ("")
@@ -257,11 +258,11 @@ let t_list_rec_read node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->
-          if (task_id == taskidsearch) then
+          if (Int64.compare task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %d with this time execution: %d made this reads from stream:\n" 
+              Printf.printf "The task ID: %Ld with this time execution: %Ld made this reads from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
               let _ = List.map list_of_read_packets sttrace in 
@@ -279,11 +280,11 @@ let t_list_rec_read node taskidsearch =
             codegen_ (ind+1) (node_succs node)
           )  
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
-          if (task_id == taskidsearch) then
+          if (Int64.compare task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %d with this time execution: %d made this reads from stream:\n" 
+              Printf.printf "The task ID: %Ld with this time execution: %Ld made this reads from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
               let _ = List.map list_of_read_packets sttrace in
@@ -311,11 +312,11 @@ let t_list_rec_write node taskidsearch =
   let rec codegen_ ind node = 
     match node with
       | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->
-          if (task_id == taskidsearch) then
+          if (Int64.compare task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %d with this time execution: %d made this write from stream:\n" 
+              Printf.printf "The task ID: %Ld with this time execution: %Ld made this write from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
               let _ = List.map list_of_write_packets sttrace in
@@ -333,11 +334,11 @@ let t_list_rec_write node taskidsearch =
             codegen_ (ind+1) (node_succs node)
           )  
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
-          if (task_id == taskidsearch) then
+          if (Int64.compare task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %d with this time execution: %d made this write from stream:\n" 
+              Printf.printf "The task ID: %Ld with this time execution: %Ld made this write from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
               let _ = List.map list_of_write_packets sttrace in
