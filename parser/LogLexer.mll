@@ -48,6 +48,6 @@ rule token = parse
                     ^ ","
                     ^ (string_of_int lexbuf.Lexing.lex_curr_p.Lexing.pos_bol))
                    }
-
+ 
 {
 }

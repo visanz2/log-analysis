@@ -49,7 +49,7 @@ let positionwithnum_number =
 let codegen node = 
   let rec codegen_ ind node =
     match node with
-      | MappingEntries _ -> codegen_ (ind+1) (mappingentries_succs node); "workerStarted" 
+      | MappingEntries _ -> let _ = codegen_ (ind+1) (mappingentries_succs node) in "workerStarted" 
       | Empty       _ -> "empty"
   in codegen_ 0 node
 

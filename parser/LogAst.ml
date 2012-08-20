@@ -121,19 +121,19 @@ let information_succs =
 
 (* Stream Entry Parameters *)
 let streamentry_streanid =
-  function StreamEntry (stream_id, _, _, _, _, _, _) -> stream_id | _ -> raise Node_Mismatch
+  function StreamEntry (stream_id, _, _, _, _, _, _) -> stream_id (*| _ -> raise Node_Mismatch *)
 let streamentry_mode =
-  function StreamEntry (_, mode, _, _, _, _, _) -> mode | _ -> raise Node_Mismatch
+  function StreamEntry (_, mode, _, _, _, _, _) -> mode (*| _ -> raise Node_Mismatch *)
 let streamentry_state =
-  function StreamEntry (_, _, state, _, _, _, _) -> state | _ -> raise Node_Mismatch
+  function StreamEntry (_, _, state, _, _, _, _) -> state (*| _ -> raise Node_Mismatch *)
 let streamentry_items =
-  function StreamEntry (_, _, _, items, _, _, _) -> items | _ -> raise Node_Mismatch
+  function StreamEntry (_, _, _, items, _, _, _) -> items (*| _ -> raise Node_Mismatch *)
 let streamentry_firstflag =
-  function StreamEntry (_, _, _, _, firstflag, _, _) -> firstflag | _ -> raise Node_Mismatch
+  function StreamEntry (_, _, _, _, firstflag, _, _) -> firstflag (*| _ -> raise Node_Mismatch *)
 let streamentry_secondflag =
-  function StreamEntry (_, _, _, _, _, secondflag, _) -> secondflag | _ -> raise Node_Mismatch
+  function StreamEntry (_, _, _, _, _, secondflag, _) -> secondflag (*| _ -> raise Node_Mismatch *)
 let streamentry_thirdflag =
-function StreamEntry (_, _, _, _, _, _, thirdflag) -> thirdflag | _ -> raise Node_Mismatch
+function StreamEntry (_, _, _, _, _, _, thirdflag) -> thirdflag (*| _ -> raise Node_Mismatch *)
 
 
 (* Function with all the nodes *)
@@ -150,12 +150,12 @@ let node_succs node = match node with
 let codegen node = 
   let rec codegen_ ind node =
     match node with
-      | WorkStarted _ -> codegen_ (ind+1) (node_succs node); "workerStarted" 
-      | WorkWaited  _ -> codegen_ (ind+1) (node_succs node); "workerWaited" 
-      | WorkEnded   _ -> codegen_ (ind+1) (node_succs node); "workerWaited"
-      | TaskBlocked _ -> codegen_ (ind+1) (node_succs node); "TaskBlocked"              
-      | TaskEnded   _ -> codegen_ (ind+1) (node_succs node); "TaskEndend" 
-      | Information _ -> codegen_ (ind+1) (node_succs node); "Information" 
+      | WorkStarted _ -> codegen_ (ind+1) (node_succs node) 
+      | WorkWaited  _ -> codegen_ (ind+1) (node_succs node) 
+      | WorkEnded   _ -> codegen_ (ind+1) (node_succs node)
+      | TaskBlocked _ -> codegen_ (ind+1) (node_succs node)              
+      | TaskEnded   _ -> codegen_ (ind+1) (node_succs node) 
+      | Information _ -> codegen_ (ind+1) (node_succs node) 
       | Empty       _ -> "empty"
   in codegen_ 0 node
 
@@ -185,7 +185,8 @@ let t_blocktime node taskidsearch =
           if (task_id == taskidsearch) then
             (
               Printf.printf "Blocked Task id: %d with real execution time in the moment when the task is blocked is: %d  \n" taskidsearch (tims_stamp-exec_time); 
-              codegen_ (ind+1) (node_succs node); true
+              let _ = codegen_ (ind+1) (node_succs node)in 
+                true
             )
           else 
             codegen_ (ind+1) (node_succs node)              
@@ -263,9 +264,9 @@ let t_list_rec_read node taskidsearch =
               Printf.printf "The task ID: %d with this time execution: %d made this reads from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
-              List.map list_of_read_packets sttrace;
+              let _ = List.map list_of_read_packets sttrace in 
               Printf.printf "\n";
-              codegen_ (ind+1) (node_succs node);
+              let _ = codegen_ (ind+1) (node_succs node) in
               true
             )
             else
@@ -285,9 +286,9 @@ let t_list_rec_read node taskidsearch =
               Printf.printf "The task ID: %d with this time execution: %d made this reads from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
-              List.map list_of_read_packets sttrace;
+              let _ = List.map list_of_read_packets sttrace in
               Printf.printf "\n";
-              codegen_ (ind+1) (node_succs node);
+              let _ = codegen_ (ind+1) (node_succs node) in
               true
             )
             else
@@ -317,9 +318,9 @@ let t_list_rec_write node taskidsearch =
               Printf.printf "The task ID: %d with this time execution: %d made this write from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
-              List.map list_of_write_packets sttrace;
+              let _ = List.map list_of_write_packets sttrace in
               Printf.printf "\n";
-              codegen_ (ind+1) (node_succs node);
+              let _ = codegen_ (ind+1) (node_succs node) in
               true
             )
             else
@@ -339,9 +340,9 @@ let t_list_rec_write node taskidsearch =
               Printf.printf "The task ID: %d with this time execution: %d made this write from stream:\n" 
               taskidsearch tims_stamp;
               Printf.printf "--------------------------------------------------------------------------\n";
-              List.map list_of_write_packets sttrace;
+              let _ = List.map list_of_write_packets sttrace in
               Printf.printf "\n";
-              codegen_ (ind+1) (node_succs node);
+              let _ = codegen_ (ind+1) (node_succs node) in
               true
             )
             else
