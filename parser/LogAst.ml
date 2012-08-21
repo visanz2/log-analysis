@@ -235,24 +235,6 @@ let list_of_write_packets l =
     | _ -> ()
 
 
-
-(* Read the information about stream of the write's packets *)
-let list_of_specified_packets l idsearch= 
-  match l with
-    | StreamTrace (streamentry) -> 
-        if ( (Int64.compare (streamentry_streanid streamentry) idsearch) == 0 ) then
-        (
-          "\n Mode: " ^ (mode_to_str (streamentry_mode streamentry)) ^ " - State: " ^ (state_to_str(streamentry_state streamentry)) ^ 
-          " - items: " ^ (Int64.to_string (streamentry_items streamentry)) ^" - Flags: " ^ Char.escaped (streamentry_firstflag streamentry)
-          ^ Char.escaped (streamentry_secondflag streamentry) ^ Char.escaped (streamentry_thirdflag streamentry) ^ "\n"  
-        )
-        else ("")
-| ST_MessTrace _ -> ("")
-| _ -> ("")
-
-
-
-
 (* This function needs the Task ID and it returns the list of time when the task read in the stream *)
 let t_list_rec_read node taskidsearch = 
   let rec codegen_ ind node =
@@ -360,5 +342,49 @@ let t_list_rec_write node taskidsearch =
   in codegen_ 0 node
 
 
+
+(* This function needs the Stream ID and it returns the stream trace if it is exist *)
+let t_search_stream node streamidsearch workerid = 
+  let rec codegen_ ind node = 
+    match node with
+      | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->
+            let _ = List.map  (* Read the information about stream of the write's packets *)
+                    (
+                    function l ->
+                        match l with
+                            | StreamTrace (streamentry) -> 
+                                if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                (
+                                  Printf.printf "\n WorkerID: %d - Mode: %s - State: %s - items: %Ld - Flags %c %c %c \n" workerid 
+                                  (mode_to_str (streamentry_mode streamentry)) (state_to_str(streamentry_state streamentry)) 
+                                  (streamentry_items streamentry) (streamentry_firstflag streamentry) (streamentry_secondflag streamentry) 
+                                  (streamentry_thirdflag streamentry);
+                                )
+                                else ()
+                            | _ -> ()
+                    )
+                    sttrace in
+            codegen_ (ind+1) (node_succs node)
+      | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
+            let _ = List.map  (* Read the information about stream of the write's packets *)
+                    (
+                    function l ->
+                        match l with
+                            | StreamTrace (streamentry) -> 
+                                if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                (
+                                  Printf.printf "\n WorkerID: %d - Mode: %s - State: %s - items: %Ld - Flags %c %c %c \n" workerid 
+                                  (mode_to_str (streamentry_mode streamentry)) (state_to_str(streamentry_state streamentry)) 
+                                  (streamentry_items streamentry) (streamentry_firstflag streamentry) (streamentry_secondflag streamentry) 
+                                  (streamentry_thirdflag streamentry);
+                                )
+                                else ()
+                            | _ -> ()
+                    )
+                    sttrace in
+            codegen_ (ind+1) (node_succs node)
+      | Empty  _ -> ()   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node
 
 

@@ -306,6 +306,23 @@ let main () =
                               menu (ind+1)
                             )
                           in searchexecutiontime 0 
+| "9"-> (* Menu 9 - List of Stream trace with Stream ID specific *)  
+                        Printf.printf "\n What Stream do you want to search? (write the Stream ID)\n"; 
+                        flush stdout;
+                        let streamidsearch = try  Int64.of_string(input_line stdin)  
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+                        in
+                          let rec searchstreams var =
+                            if (var < (List.length listlog)) then
+                            (
+                              t_search_stream (List.nth listlog var) streamidsearch var ;
+                              searchstreams (var+1) 
+                            )
+                            else
+                            (
+                              menu (ind+1)
+                            )
+                          in searchstreams 0 
 
               | _ -> Printf.printf "It's not a good option.\n"; menu (ind+1)
     in Printf.printf "\n"
