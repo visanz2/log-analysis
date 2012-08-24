@@ -114,4 +114,31 @@ let t_search_boxname node searchname listsolutions =
 
 
 
+(* Return all the id possibles for one boxname, if not return null*)
+let t_search_boxname_all node searchname listsolutions = 
+  let rec codegen_ ind node listsolutions =
+    match node with
+      | MappingEntries (taskid, _, boxname, workerid,_) ->
+                  if ( String.compare searchname boxname ) == 0 then 
+                  ( 
+                    codegen_ (ind+1) (mappingentries_succs node) (taskid::listsolutions);
+                   )
+                  else
+                  (
+                    codegen_ (ind+1) (mappingentries_succs node) listsolutions; 
+                  );
+
+      | Empty       _ -> 
+                  if ((List.length listsolutions) == 0) then
+                  (
+                    Printf.printf "\nDon't exist a box name with this name.\n"; 
+                    [Int64.minus_one]
+                  )
+                  else
+                  (
+                    listsolutions
+                  )
+                  
+                
+  in codegen_ 0 node []
 

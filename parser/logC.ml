@@ -1,9 +1,18 @@
 open LogAst
 open MapAst
 
+
 type args = {mutable filename: string}
 
-let set_filename a s = a.filename <- s
+(* Variables for use the arguments *)
+let savename = ref ""
+let resultscommandline = ref ""
+let optionexec     = ref false
+let optionlisttime = ref false
+let execoption   = [("e", true); ("ended", true); ("b", false); ("blocked", false)]
+let listtimeoption = [("r", true); ("read", true); ("w", false); ("write", false)]
+
+let print_tag t s = print_string t; print_endline s
 
 let contains s1 s2 =
   let re = Str.regexp_string s2
@@ -12,97 +21,295 @@ let contains s1 s2 =
     with Not_found -> false
 ;;
 
-(* Search the log fiales and the map file with one direction *)
-let searchfiles direction numbernode =
-let children = Sys.readdir direction in
-let rec getlogfile ind listfile =
-    if (ind < (Array.length children)) then
-    (
-      let filename = Array.get children ind in
-        if (contains filename ("mon_n" ^ numbernode ^ "_worker" ) ) then
-        (
-          getlogfile (ind+1) ((direction ^ filename)::listfile)
-        )
-        else 
-        (
-          getlogfile (ind+1) listfile
-        )
-    )
-    else 
-    (
-      listfile
-    )
-in getlogfile 0 [direction ^ "n" ^numbernode ^"_tasks.map"]
+
+(* Search the log files and the map file*)
+let searchfilesasd mapfile =
+  let numbernode = (String.sub mapfile ((String.length mapfile) -12) 2) in 
+    let directory = (String.sub mapfile 0 ((String.length mapfile) -13)) in 
+      let children = Sys.readdir directory in
+        let rec getlogfile ind listfile =
+          if (ind < (Array.length children)) then
+          (
+            let filename = Array.get children ind in
+              if (contains filename ("mon_n" ^ numbernode ^ "_worker" ) ) then
+              (
+                getlogfile (ind+1) ((directory ^ filename)::listfile)
+              )
+              else 
+              (
+                getlogfile (ind+1) listfile
+              )
+          )
+          else 
+          (
+            listfile
+          )
+  in getlogfile 0 [mapfile]
 ;;
+
 
 (* PRINCIPAL FUNCTION OF THIS PROGRAM  *)
 let main () = 
-  if ((Array.length Sys.argv) < 3) then
+  if ((Array.length Sys.argv) == 1 || (String.length Sys.argv.(Array.length Sys.argv-1))<14 ) then
   (
-    Printf.printf "It's necessary to give 2 arguments, more arguments will be ignored:\n";
-    Printf.printf "1.- Directory where the file is, for example, c:/ \n";
-    Printf.printf "2.- Number of nodes (always two digits) for opening the log files and the map file.\n"
+    Printf.printf "\nIt's necessary to give 1 arguments, more arguments will be ignored:\n";
+    Printf.printf "1.- The direction of the mapfile\n";
+    Printf.printf "if you want more information, write --help mapfile \n";
+    exit 0
   )
-  else 
-  ( (* Read the log files and the map files *)
-    let listfile = searchfiles Sys.argv.(1) Sys.argv.(2) in
-      if ((List.length listfile) == 1 ) then (* Because always insert the map file *) 
-      (
-        Printf.printf "No such file.\n";
-        exit 0
-      )
-      else(); 
-      let rec readfile ind listmap listlog =
-        if (ind < (List.length listfile)) then
-        (          let extension = String.sub (List.nth listfile ind) ((String.length (List.nth listfile ind))-3) 3 in 
-            if (String.compare extension "log") == 0 then 
-            (
-              let the_file = Pervasives.open_in (List.nth listfile ind) in
-                let lexbuf = Lexing.from_channel the_file in      
-                  let the_ast = 
-                    try LogParser.src LogLexer.token lexbuf
-                      with exn -> (* fix this *)
-                        begin
-                        let curr = lexbuf.Lexing.lex_curr_p in
-                          let line = curr.Lexing.pos_lnum in
-                            let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in
-                              let tok = Lexing.lexeme lexbuf in
-                                let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nth listfile ind) in
-                          raise LogAst.Compilation_Error
-                      end in 
-                    let _ = LogAst.codegen the_ast in
-                      readfile (ind+1) listmap (the_ast::listlog) 
-            )
-            else 
-            (
-              if (String.compare extension "map") == 0 then 
-              (
-                let the_file = Pervasives.open_in (List.nth listfile ind) in
-                  let lexbuf = Lexing.from_channel the_file in
-                    let the_ast = 
-                    try MapParser.src MapLexer.token lexbuf
+  else();
+
+  (* Read the log files and the map files *)
+  let listfile = searchfilesasd Sys.argv.(Array.length Sys.argv-1)  in
+    if ((List.length listfile) == 1 ) then (* Because always insert the map file *) 
+    (
+      Printf.printf "No such file. put a correct file.\n";
+      exit 0
+    )
+    else(); 
+
+    let rec readfile ind listmap listlog =
+      if (ind < (List.length listfile) && (List.length listfile) != 1) then
+      (        let extension = String.sub (List.nth listfile ind) ((String.length (List.nth listfile ind))-3) 3 in 
+          if (String.compare extension "log") == 0 then 
+          (
+            let the_file = Pervasives.open_in (List.nth listfile ind) in
+              let lexbuf = Lexing.from_channel the_file in      
+                let the_ast = 
+                  try LogParser.src LogLexer.token lexbuf
                     with exn -> (* fix this *)
-                    begin
+                      begin
                       let curr = lexbuf.Lexing.lex_curr_p in
                         let line = curr.Lexing.pos_lnum in
                           let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in
                             let tok = Lexing.lexeme lexbuf in
-                              let _ = Printf.printf "\nError: line %d pos %d %s\n\n" line cnum tok in
-                        raise MapAst.Compilation_Error
-                end in
-                    readfile (ind+1) (the_ast::listmap) listlog 
-                )
-                else 
+                              let _ = Printf.printf "\nError: line %d pos %d %s %s\n\n" line cnum tok (List.nth listfile ind) in
+                        raise LogAst.Compilation_Error
+                    end in 
+                  let _ = LogAst.codegen the_ast in
+                    readfile (ind+1) listmap (the_ast::listlog) 
+          )
+          else 
+          (
+            if (String.compare extension "map") == 0 then 
+            (
+              let the_file = Pervasives.open_in (List.nth listfile ind) in
+                let lexbuf = Lexing.from_channel the_file in
+                  let the_ast = 
+                  try MapParser.src MapLexer.token lexbuf
+                  with exn -> (* fix this *)
+                  begin
+                    let curr = lexbuf.Lexing.lex_curr_p in
+                      let line = curr.Lexing.pos_lnum in
+                        let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in
+                          let tok = Lexing.lexeme lexbuf in
+                            let _ = Printf.printf "\nError: line %d pos %d %s\n\n" line cnum tok in
+                      raise MapAst.Compilation_Error
+              end in
+                  readfile (ind+1) (the_ast::listmap) listlog 
+              )
+              else 
+              (
+                Printf.printf "" 
+              )
+           )
+      )
+      else 
+      (
+      );
+
+      Printf.printf "\nThe programm read: %d LOG file(s). \n" (List.length listlog);
+
+(* Command line options *)
+
+Arg.parse 
+
+  (Arg.align
+    [
+      ("--exec",Arg.Tuple 
+        [ Arg.Symbol (["e"; "ended"; "b"; "blocked"], 
+          (  
+            fun key -> 
+              optionexec := (List.assoc key execoption)
+          )
+        ); 
+          Arg.String 
+          (
+            fun key -> 
+              resultscommandline := !resultscommandline ^ "\n\nEXECUTION TIME FOR TASKS\n" ^ "------------------------\n";
+              let rec searchexecutiontime var =
+                if (var < (List.length listlog)) then
                 (
-                  Printf.printf "" 
+                  let _ = if ( !optionexec == true ) then
+                          (
+                            try  resultscommandline := !resultscommandline ^ t_exectime (List.nth listlog var) (Int64.of_string(key)); 
+                            with Failure _ -> 
+                            (
+                              let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                                let rec searchealltask ind =
+                                  if (ind < (List.length listtaskidsearch)) then
+                                  (
+                                    resultscommandline := !resultscommandline ^ t_exectime (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                    searchealltask (ind+1)
+                                  )
+                                  else
+                                  ();
+                                in searchealltask 0
+                            )
+                          )
+                          else
+                          (
+                            try  resultscommandline := !resultscommandline ^ t_blocktime (List.nth listlog var) (Int64.of_string(key)); 
+                            with Failure _ -> 
+                            (
+                              let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                                let rec searchealltask ind =
+                                  if (ind < (List.length listtaskidsearch)) then
+                                  (
+                                    resultscommandline := !resultscommandline ^ t_blocktime (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                    searchealltask (ind+1)
+                                  )
+                                  else
+                                  ();
+                                in searchealltask 0
+                            )
+                          );
+                  in
+                  searchexecutiontime (var+1)
                 )
-             )
-        )
-        else 
+                else
+                ();
+              in searchexecutiontime 0;
+          )
+      ]
+, (" For the tasks execution time. You must to put the option for blocked task ('b' or 'blocked') or ended task ('e' or 'ended' ) 
+and after put the taskID or the boxname of the task\n"
+^ "For example:\n\t --exec e leq1 -> Show the execution ended task time for all the task with boxname 'leq1'"
+^ "\n\t --exec b 1 -> Show the execution blocked task time for all the task with ID = 1 "
+^ "\n\t --exec blocked 1 --exec blocked 2 -> Show the execution blocked task time for all the task with ID = 1 and 2\n")
+);
+
+
+("--listtime", 
+  Arg.Tuple 
+    [
+      Arg.Symbol 
+      (
+        ["r"; "read"; "w"; "write"], 
         (
-        );
-        Printf.printf "\nThe programm read: %d LOG file(s) for the node %s\n" (List.length listlog) Sys.argv.(2);
-        (* Principal menu of the program *)
+          fun key -> 
+            optionlisttime := (List.assoc key listtimeoption)
+        )
+      ); 
+
+      Arg.String 
+      (
+        fun key -> 
+          resultscommandline := !resultscommandline ^ "\n\nLIST TIME OF WHEN THE TASK READ/WRITE IN THE STREAM\n" ^ "---------------------------------------------------\n";
+          let rec searchexecutiontime var =
+            if (var < (List.length listlog)) then
+            (
+              if ( !optionlisttime == true ) then
+              (
+                try  resultscommandline := !resultscommandline ^ t_list_rec_read (List.nth listlog var) (Int64.of_string(key)); 
+                with Failure _ -> 
+                (
+                  let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                    let rec searchealltask ind =
+                      if (ind < (List.length listtaskidsearch)) then
+                      (
+                        resultscommandline := !resultscommandline ^ t_list_rec_read (List.nth listlog var) (List.nth listtaskidsearch ind);
+                        searchealltask (ind+1)
+                      )
+                      else
+                      ();
+                    in searchealltask 0
+                )
+              )
+              else
+              (
+                try  resultscommandline := !resultscommandline ^ t_list_rec_write (List.nth listlog var) (Int64.of_string(key)); 
+                with Failure _ -> 
+                (
+                  let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                    let rec searchealltask ind =
+                      if (ind < (List.length listtaskidsearch)) then
+                      (
+                        resultscommandline := !resultscommandline ^ t_list_rec_write (List.nth listlog var) (List.nth listtaskidsearch ind);
+                        searchealltask (ind+1)
+                      )
+                      else
+                      ();
+                  in searchealltask 0
+                )
+              );
+              searchexecutiontime (var+1)
+            )
+            else
+            ();
+          in searchexecutiontime 0;
+
+)], (" Show the time of record time. You must to put the option for read's records ('r' or 'read') or write's records('w' or 'write' ) 
+and the taskID or the boxname of the task\n"
+^ "For example:\n\t --listtime r leq1 -> Show the time of read's record time for all the task with boxname 'leq1'"
+^ "\n\t --listtime w 1 -> Show the time of read's record time for all the task with ID = 1 "
+^ "\n\t --listtime write 1 --listtime write 2-> Show the time of read's record time for all the task with ID = 1 and 2 \n"));
+
+("--stream",
+  Arg.Int  
+  (
+    fun key -> 
+      resultscommandline := !resultscommandline ^ "\n\nLIST OF STREAM TRACE IN THE LOG FILE\n" ^ "------------------------------------\n";
+      let streamidsearch = try  Int64.of_int(key)  
+        with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+      in
+        let rec searchstreams var =
+          if (var < (List.length listlog)) then
+          (
+            resultscommandline := !resultscommandline ^ t_search_stream (List.nth listlog var) streamidsearch var ;
+            searchstreams (var+1) 
+          )
+          else
+          (
+          )
+      in searchstreams 0 
+  ),      
+(" Show Who read/write in the stream of program. You must to put the Stream ID \n"
+^ "For example:\n\t --stream 1 -> Show all the stream message with stream ID = 1\n"
+^ "\n\t --stream 1 --stream 2 -> Show all the stream message with stream ID = 1 and 2\n")
+);
+
+("--save",Arg.Set_string savename, (" Save the result about the command line in one file. After the program finish." 
+^ "\nOnly is possible to save in one file. The programme get the last save command."
+^ "\nFor example: \n\t --save filename.txt\n" ));
+
+])
+
+(print_tag " ") 
+  (
+    " Analysis tools for runtime logs "
+    ^ "\nIt's necessary to give 1 arguments, more arguments will be ignored:\n" 
+    ^ "1.- The direction of the mapfile\n"
+  )
+;
+
+(* If the option save is used *)
+  if ((String.length !savename) == 0) then
+  (
+    Printf.printf "%s" !resultscommandline;
+  )
+  else
+  (
+    let channel = open_out !savename in
+      output_string channel !resultscommandline;
+      close_out channel;
+      Printf.printf "The results are saving in %s \n" !savename;
+      exit 0
+  );
+
+
+
+(* Principal menu of the program *)
         let rec menu ind =
           Printf.printf "\nMenu: \n";
           Printf.printf "0.- Finish the program \n";
@@ -126,14 +333,16 @@ let main () =
                         let rec searchexecutiontime var =
                           if (var < (List.length listlog)) then
                           (
-                            if ((t_exectime (List.nth listlog var) taskidsearch) == false) then
-                            (
-                              searchexecutiontime (var+1)
-                            )
-                            else
-                            (
-                              menu (ind+1)
-                            )                          )
+                            let timeexec = t_exectime (List.nth listlog var) taskidsearch in 
+                              if (timeexec == "") then
+                              (
+                                searchexecutiontime (var+1)
+                              )
+                              else
+                              (
+                                Printf.printf "%s" timeexec;
+                                menu (ind+1)
+                              )                          )
                           else
                           (
                             Printf.printf "Impossible to find the task in the load log files.\n";
@@ -150,14 +359,16 @@ let main () =
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
                             (
-                              if ((t_exectime (List.nth listlog var) taskidsearch) == false) then
-                              (
-                                searchexecutiontime (var+1)
-                              )
-                              else
-                              (
-                                menu (ind+1);
-                              )
+                              let timeexec = t_exectime (List.nth listlog var) taskidsearch in
+                                if (timeexec == "") then
+                                (
+                                  searchexecutiontime (var+1)
+                                )
+                                else
+                                (
+                                  Printf.printf "%s" timeexec;
+                                  menu (ind+1);
+                                )
                             )
                             else
                             (
@@ -172,14 +383,16 @@ let main () =
                         let rec searchexecutiontime var =
                           if (var < (List.length listlog)) then
                           (
-                            if ((t_blocktime (List.nth listlog var) taskidsearch) == false) then
-                            (
-                              searchexecutiontime (var+1)
-                            )
-                            else
-                            (
-                              menu (ind+1);
-                            )
+                            let blocktime = t_blocktime (List.nth listlog var) taskidsearch in
+                              if ( blocktime == "" ) then
+                              (
+                                searchexecutiontime (var+1)
+                              )
+                              else
+                              (
+                                Printf.printf "%s" blocktime;
+                                menu (ind+1);
+                              )
                           )
                           else
                           (
@@ -197,14 +410,16 @@ let main () =
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
                             (
-                              if ((t_blocktime (List.nth listlog var) taskidsearch) == false) then
-                              (
-                                searchexecutiontime (var+1)
-                              )
-                              else
-                              (
-                                menu (ind+1);
-                              )
+                              let blocktime = t_blocktime (List.nth listlog var) taskidsearch in
+                                if ( blocktime == "") then
+                                (
+                                  searchexecutiontime (var+1)
+                                )
+                                else
+                                (
+                                  Printf.printf "%s" blocktime;
+                                  menu (ind+1);
+                                )
                             )
                             else
                             (
@@ -219,14 +434,16 @@ let main () =
                         let rec searchexecutiontime var =
                           if (var < (List.length listlog)) then
                           (
-                            if ((t_list_rec_read (List.nth listlog var) taskidsearch) == false) then
-                            (
-                              searchexecutiontime (var+1)
-                            )
-                            else
-                            (
-                              menu (ind+1);
-                            )
+                            let listread =  t_list_rec_read (List.nth listlog var) taskidsearch in
+                              if ( listread == "" ) then
+                              (
+                                searchexecutiontime (var+1)
+                              )
+                              else
+                              (
+                                Printf.printf "%s" listread;
+                                menu (ind+1);
+                              )
                           )
                           else
                           (
@@ -244,14 +461,16 @@ let main () =
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
                             (
-                              if ((t_list_rec_read (List.nth listlog var) taskidsearch) == false) then
-                              (
-                                searchexecutiontime (var+1)
-                              )
-                              else
-                              (
-                                menu (ind+1);
-                              )
+                              let listread = t_list_rec_read (List.nth listlog var) taskidsearch in
+                                if ( listread == "") then
+                                (
+                                  searchexecutiontime (var+1)
+                                )
+                                else
+                                (
+                                  Printf.printf "%s" listread;
+                                  menu (ind+1);
+                                )
                             )
                             else
                             (
@@ -266,14 +485,16 @@ let main () =
                         let rec searchexecutiontime var =
                           if (var < (List.length listlog)) then
                           (
-                            if ((t_list_rec_write (List.nth listlog var) taskidsearch) == false) then
-                            (
-                              searchexecutiontime (var+1)
-                            )
-                            else
-                            (
-                              menu (ind+1);
-                            )
+                            let listwrite = t_list_rec_write (List.nth listlog var) taskidsearch in 
+                              if ( listwrite == "" ) then
+                              (
+                                searchexecutiontime (var+1)
+                              )
+                              else
+                              (
+                                Printf.printf "%s" listwrite;
+                                menu (ind+1);
+                              )
                           )
                           else
                           (
@@ -291,14 +512,16 @@ let main () =
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
                             (
-                              if ((t_list_rec_write (List.nth listlog var) taskidsearch) == false) then
-                              (
-                                searchexecutiontime (var+1)
-                              )
-                              else
-                              (
-                                menu (ind+1);
-                              )
+                              let listwrite = t_list_rec_write (List.nth listlog var) taskidsearch in 
+                                if ( listwrite == "") then
+                                (
+                                  searchexecutiontime (var+1)
+                                )
+                                else
+                                (
+                                  Printf.printf "%s" listwrite;
+                                  menu (ind+1);
+                                )
                             )
                             else
                             (
@@ -306,7 +529,7 @@ let main () =
                               menu (ind+1)
                             )
                           in searchexecutiontime 0 
-| "9"-> (* Menu 9 - List of Stream trace with Stream ID specific *)  
+              | "9"-> (* Menu 9 - List of Stream trace with Stream ID specific *)  
                         Printf.printf "\n What Stream do you want to search? (write the Stream ID)\n"; 
                         flush stdout;
                         let streamidsearch = try  Int64.of_string(input_line stdin)  
@@ -315,7 +538,7 @@ let main () =
                           let rec searchstreams var =
                             if (var < (List.length listlog)) then
                             (
-                              t_search_stream (List.nth listlog var) streamidsearch var ;
+                              Printf.printf "%s" (t_search_stream (List.nth listlog var) streamidsearch var );
                               searchstreams (var+1) 
                             )
                             else
@@ -328,6 +551,6 @@ let main () =
     in Printf.printf "\n"
             in menu 0;
     in readfile 0 [] []; Printf.printf "\n"
-  )
+  
 
 let _ = Printexc.print main () ;;

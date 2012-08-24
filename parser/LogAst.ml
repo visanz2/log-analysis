@@ -166,15 +166,14 @@ let t_exectime node taskidsearch =
       | TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
             if (Int64.compare task_id taskidsearch) == 0 then
             (
-              Printf.printf "Ended Task id: %Ld with real execution time: %Ld  \n" taskidsearch (Int64.sub tims_stamp creation_time);
-              Printf.printf "Diference between the real execution time and execution time: %Ld - %Ld = %Ld  \n" (Int64.sub tims_stamp creation_time) exec_time 
-              (Int64.sub (Int64.sub tims_stamp creation_time) exec_time);
-              true
+              "Ended Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time))
+              ^ "\nDiference between the real execution time and execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time)) ^ " - "  
+              ^ (Int64.to_string(exec_time)) ^ " = " ^ (Int64.to_string((Int64.sub (Int64.sub tims_stamp creation_time) exec_time))) ^ "\n\n" 
             )
             else
             (
               codegen_ (ind+1) (node_succs node);            )
-      | Empty       _ -> false 
+      | Empty       _ -> "" 
       | _       ->  codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
 
@@ -185,13 +184,13 @@ let t_blocktime node taskidsearch =
       | TaskBlocked (tims_stamp, _, task_id, exec_time, _, _) ->  
           if (Int64.compare task_id taskidsearch) == 0 then
             (
-              Printf.printf "Blocked Task id: %Ld with real execution time in the moment when the task is blocked is: %Ld  \n" taskidsearch (Int64.sub tims_stamp exec_time); 
-              let _ = codegen_ (ind+1) (node_succs node)in 
-                true
+                codegen_ (ind+1) (node_succs node) 
+                ^ "Blocked Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time in the moment when the task is blocked is: " 
+                ^ (Int64.to_string((Int64.sub tims_stamp exec_time))) ^ "\n\n"
             )
           else 
             codegen_ (ind+1) (node_succs node)              
-      | Empty       _ -> Printf.eprintf "\n"; false 
+      | Empty       _ -> "" 
       | _       ->  codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
 
@@ -217,22 +216,21 @@ let list_of_read_packets l =
   match l with
     | StreamTrace (streamentry) -> 
         if ( (streamentry_mode streamentry) == 'r') then
-          Printf.printf " StreamID: %Ld - State: %s - items: %Ld\n" (streamentry_streanid streamentry) 
-          (state_to_str(streamentry_state streamentry)) (streamentry_items streamentry)
-        else ()
-    | ST_MessTrace _ -> ()
-    | _ -> ()
+          " StreamID: " ^ (Int64.to_string (streamentry_streanid streamentry)) ^ " - State: " 
+          ^ (state_to_str(streamentry_state streamentry)) ^ " - items: " ^ (Int64.to_string (streamentry_items streamentry)) ^ "\n\n"  
+        else ("")
+    | _ -> ("")
 
 (* Read the information about stream of the write's packets *)
 let list_of_write_packets l = 
   match l with
     | StreamTrace (streamentry) -> 
         if ( (streamentry_mode streamentry) == 'w') then
-          Printf.printf " StreamID: %Ld - State: %s - items: %Ld\n" (streamentry_streanid streamentry) 
-          (state_to_str(streamentry_state streamentry)) (streamentry_items streamentry)
-        else ()
-    | ST_MessTrace _ -> ()
-    | _ -> ()
+          " StreamID: " ^ (Int64.to_string (streamentry_streanid streamentry)) ^ " - State: " 
+          ^ (state_to_str(streamentry_state streamentry)) ^ " - items: "
+          ^ (Int64.to_string (streamentry_items streamentry)) ^ "\n\n" 
+        else ("")
+    | _ -> ("")
 
 
 (* This function needs the Task ID and it returns the list of time when the task read in the stream *)
@@ -244,13 +242,11 @@ let t_list_rec_read node taskidsearch =
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %Ld with this time execution: %Ld made this reads from stream:\n" 
-              taskidsearch tims_stamp;
-              Printf.printf "--------------------------------------------------------------------------\n";
-              let _ = List.map list_of_read_packets sttrace in 
-              Printf.printf "\n";
-              let _ = codegen_ (ind+1) (node_succs node) in
-              true
+                codegen_ (ind+1) (node_succs node)
+                ^ "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
+                ^ (Int64.to_string tims_stamp) ^ " made this reads from stream:\n" 
+                ^ "--------------------------------------------------------------------------\n"
+                ^ String.concat "" (List.map list_of_read_packets sttrace) 
             )
             else
             (
@@ -266,13 +262,11 @@ let t_list_rec_read node taskidsearch =
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %Ld with this time execution: %Ld made this reads from stream:\n" 
-              taskidsearch tims_stamp;
-              Printf.printf "--------------------------------------------------------------------------\n";
-              let _ = List.map list_of_read_packets sttrace in
-              Printf.printf "\n";
-              let _ = codegen_ (ind+1) (node_succs node) in
-              true
+                codegen_ (ind+1) (node_succs node)
+                ^ "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
+                ^ (Int64.to_string tims_stamp) ^ " made this reads from stream:\n" 
+                ^ "--------------------------------------------------------------------------\n"
+                ^ String.concat "" (List.map list_of_read_packets sttrace)
             )
             else
             (
@@ -283,7 +277,7 @@ let t_list_rec_read node taskidsearch =
           (
             codegen_ (ind+1) (node_succs node)
           )  
-      | Empty  _ -> Printf.printf "\n";false 
+      | Empty  _ -> ""
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
 
@@ -298,13 +292,11 @@ let t_list_rec_write node taskidsearch =
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %Ld with this time execution: %Ld made this write from stream:\n" 
-              taskidsearch tims_stamp;
-              Printf.printf "--------------------------------------------------------------------------\n";
-              let _ = List.map list_of_write_packets sttrace in
-              Printf.printf "\n";
               let _ = codegen_ (ind+1) (node_succs node) in
-              true
+                "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
+                ^ (Int64.to_string tims_stamp) ^ " made this write from stream:\n" 
+                ^ "--------------------------------------------------------------------------\n"
+                ^ String.concat "" (List.map list_of_write_packets sttrace)             
             )
             else
             (
@@ -320,13 +312,11 @@ let t_list_rec_write node taskidsearch =
           (
             if ((List.length sttrace) > 0) then
             (
-              Printf.printf "The task ID: %Ld with this time execution: %Ld made this write from stream:\n" 
-              taskidsearch tims_stamp;
-              Printf.printf "--------------------------------------------------------------------------\n";
-              let _ = List.map list_of_write_packets sttrace in
-              Printf.printf "\n";
               let _ = codegen_ (ind+1) (node_succs node) in
-              true
+                "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
+                ^ (Int64.to_string tims_stamp) ^ " made this write from stream:\n" 
+                ^ "--------------------------------------------------------------------------\n"
+                ^ String.concat "" (List.map list_of_write_packets sttrace)
             )
             else
             (
@@ -337,7 +327,7 @@ let t_list_rec_write node taskidsearch =
           (
             codegen_ (ind+1) (node_succs node)
           )  
-      | Empty  _ -> Printf.printf "\n"; false 
+      | Empty  _ -> ""
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
 
@@ -347,43 +337,43 @@ let t_list_rec_write node taskidsearch =
 let t_search_stream node streamidsearch workerid = 
   let rec codegen_ ind node = 
     match node with
-      | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->
-            let _ = List.map  (* Read the information about stream of the write's packets *)
-                    (
-                    function l ->
-                        match l with
-                            | StreamTrace (streamentry) -> 
-                                if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
-                                (
-                                  Printf.printf "\n WorkerID: %d - Mode: %s - State: %s - items: %Ld - Flags %c %c %c \n" workerid 
-                                  (mode_to_str (streamentry_mode streamentry)) (state_to_str(streamentry_state streamentry)) 
-                                  (streamentry_items streamentry) (streamentry_firstflag streamentry) (streamentry_secondflag streamentry) 
-                                  (streamentry_thirdflag streamentry);
-                                )
-                                else ()
-                            | _ -> ()
-                    )
-                    sttrace in
-            codegen_ (ind+1) (node_succs node)
+      | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->          
+            let _ = codegen_ (ind+1) (node_succs node) in
+              String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+                                                "WorkerID: " ^ (string_of_int workerid) ^ " - Mode: " ^ (mode_to_str (streamentry_mode streamentry)) ^ " - State: "
+                                                ^ (state_to_str(streamentry_state streamentry)) ^ " - Items: " ^ (Int64.to_string (streamentry_items streamentry)) 
+                                                ^ " - Flags " ^(Char.escaped (streamentry_firstflag streamentry)) ^ (Char.escaped (streamentry_secondflag streamentry))
+                                                ^ (Char.escaped (streamentry_thirdflag streamentry)) ^ "\n\n"  
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
-            let _ = List.map  (* Read the information about stream of the write's packets *)
-                    (
-                    function l ->
-                        match l with
-                            | StreamTrace (streamentry) -> 
-                                if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
-                                (
-                                  Printf.printf "\n WorkerID: %d - Mode: %s - State: %s - items: %Ld - Flags %c %c %c \n" workerid 
-                                  (mode_to_str (streamentry_mode streamentry)) (state_to_str(streamentry_state streamentry)) 
-                                  (streamentry_items streamentry) (streamentry_firstflag streamentry) (streamentry_secondflag streamentry) 
-                                  (streamentry_thirdflag streamentry);
-                                )
-                                else ()
-                            | _ -> ()
-                    )
-                    sttrace in
-            codegen_ (ind+1) (node_succs node)
-      | Empty  _ -> ()   
+            let _ = codegen_ (ind+1) (node_succs node) in
+              String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+                                                "WorkerID: " ^ (string_of_int workerid) ^ " - Mode: " ^ (mode_to_str (streamentry_mode streamentry)) ^ " - State: "
+                                                ^ (state_to_str(streamentry_state streamentry)) ^ " - Items: " ^ (Int64.to_string (streamentry_items streamentry)) 
+                                                ^ " - Flags " ^(Char.escaped (streamentry_firstflag streamentry)) ^ (Char.escaped (streamentry_secondflag streamentry))
+                                                ^ (Char.escaped (streamentry_thirdflag streamentry)) ^ "\n\n"  
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+      | Empty  _ -> ("")   
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
 
