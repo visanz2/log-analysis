@@ -1,5 +1,6 @@
 open LogAst
 open MapAst
+open ArgAst
 
 type args = {mutable filename: string}
 
