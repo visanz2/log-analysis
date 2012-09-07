@@ -7,6 +7,12 @@ open LogAst
 		SMC
 		COMA
 		COLON
+		OBRACKET
+		DIV
+		CBRACKET
+		LOGVERSION
+		SINCE
+		ZOMBIE
 		WAITCHAR
 		STARTCHAR
 		ENDCHAR
@@ -29,7 +35,7 @@ open LogAst
 	           FLGFIRST
 	           FLGSECOND
 	           FLGTHIRD
-
+                
 %token WS
 %token NL
 
@@ -39,6 +45,7 @@ open LogAst
 %%
 
 src: 
+| LOGVERSION NUM DOT NUM OBRACKET SINCE NUM DIV NUM DIV NUM CBRACKET HASH src { $14 }
 | NUM STARTCHAR HASH src { WorkStarted ($1, $4) }
 | NUM WAITCHAR NUM HASH src { WorkWaited ( $1, $3, $5 ) }
 | NUM ENDCHAR HASH src { WorkEnded ($1, $4) }

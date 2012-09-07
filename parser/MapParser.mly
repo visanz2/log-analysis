@@ -3,7 +3,13 @@ open MapAst
 %}
 
 %token  SMALLER
-        GREATER   
+		GREATER
+		DOT
+        OBRACKET
+        DIV
+		CBRACKET  
+		LOGVERSION
+        SINCE 
         COLON     
         HASH
         EOF
@@ -16,7 +22,7 @@ open MapAst
 			   PREPL
 
 %token <string> BOXNAME 
-
+                
 %token WS
 %token NL
 
@@ -27,6 +33,7 @@ open MapAst
 %%
   
 src: 
+| LOGVERSION NUM DOT NUM OBRACKET SINCE NUM DIV NUM DIV NUM CBRACKET HASH src { $14 }
 | NUM netpath boxnames NUM HASH src {MappingEntries ( $1, $2, $3, $4, $6) }
 | EOF {Empty}
 ;

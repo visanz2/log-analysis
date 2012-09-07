@@ -18,22 +18,28 @@ let box          = letter letter ((letter | sym | negative |digit)+)
 let intval       = (negative)?(digit+)
 let nl           = ['\n']
 let ws           = [' ' '\t'] 
-
+ 
 rule token = parse
-  | 'S'                 {SCOMP ('S')}
-  | 'P'                 {PCOMP ('P')}
-  | 'R'                 {SREPL ('R')}
-  | 'I'                 {PREPL ('I')}
-  | ':'                 {COLON}
-  | '<'                 {SMALLER}
-  | '>'                 {GREATER}
-  | '#'                 {inc_lnum lexbuf; HASH}
-  | ws+                 {token lexbuf}
-  | nl+                 {token lexbuf}
-  | intval as num       {NUM(Int64.of_string num)}   
-  | box as b             {BOXNAME (b) }
-  | eof                 {EOF}
-  | _                   {failwith((Lexing.lexeme lexbuf)  
+  | 'S'                   {SCOMP ('S')}
+  | 'P'                   {PCOMP ('P')}
+  | 'R'                   {SREPL ('R')}
+  | 'I'                   {PREPL ('I')}
+  | "Log format version"  {LOGVERSION}
+  | '.'                   {DOT}  
+  | '('                   {OBRACKET}
+  | "since"               {SINCE}
+  | '/'                   {DIV}
+  | ')'                   {CBRACKET}
+  | ':'                   {COLON}
+  | '<'                   {SMALLER}
+  | '>'                   {GREATER}
+  | '#'                   {inc_lnum lexbuf; HASH}
+  | ws+                   {token lexbuf}
+  | nl+                   {token lexbuf}
+  | intval as num         {NUM(Int64.of_string num)}   
+  | box as b              {BOXNAME (b) }
+  | eof                   {EOF}
+  | _                     {failwith((Lexing.lexeme lexbuf)  
                         ^ ": syntax error at " 
                         ^ (string_of_int lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum)
                         ^ ","
