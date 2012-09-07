@@ -1,7 +1,6 @@
 open LogAst
 open MapAst
 
-
 type args = {mutable filename: string}
 
 (* Variables for use the arguments *)
@@ -46,6 +45,7 @@ let searchfilesasd mapfile =
           )
   in getlogfile 0 [mapfile]
 ;;
+
 
 
 (* PRINCIPAL FUNCTION OF THIS PROGRAM  *)
@@ -103,7 +103,7 @@ let main () =
                       let line = curr.Lexing.pos_lnum in
                         let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in
                           let tok = Lexing.lexeme lexbuf in
-                            let _ = Printf.printf "\nError: line %d pos %d %s\n\n" line cnum tok in
+                            let _ = Printf.printf "\nError: line %d pos %d %s in Map File\n\n" line cnum tok in
                       raise MapAst.Compilation_Error
               end in
                   readfile (ind+1) (the_ast::listmap) listlog 
@@ -293,6 +293,34 @@ and the taskID or the boxname of the task\n"
   )
 ;
 
+
+if Sys.file_exists "c:/ficheros/options.log" then 
+(
+  let the_file = Pervasives.open_in ("C:/ficheros/options.log") in
+    let lexbuf = Lexing.from_channel the_file in      
+      let the_ast = 
+        try ArgParser.src ArgLexer.token lexbuf
+        with exn -> (* fix this *)
+            begin
+              let curr = lexbuf.Lexing.lex_curr_p in
+                let line = curr.Lexing.pos_lnum in
+                  let cnum = curr.Lexing.pos_cnum - curr.Lexing.pos_bol in
+                    let tok = Lexing.lexeme lexbuf in
+                      let _ = Printf.printf "\nError: line %d pos %d %s options.log\n\n" line cnum tok in
+            raise ArgAst.Compilation_Error
+end in 
+let listexec = [] in
+let listtime = [] in
+let liststream = [] in
+let filenamesave =  "" in
+ArgAst.read_arguments the_ast listexec listtime liststream filenamesave ;print_endline "The option file was reading.\n";
+)
+else 
+(
+print_endline "Option file don't exists.";
+);
+ 
+
 (* If the option save is used *)
   if ((String.length !savename) == 0) then
   (
@@ -306,6 +334,7 @@ and the taskID or the boxname of the task\n"
       Printf.printf "The results are saving in %s \n" !savename;
       exit 0
   );
+
 
 
 

@@ -20,6 +20,7 @@ open LogAst
 
 %token <char>  CHARI
                CHARO
+               CHARR
 			   BLKANY 
 			   STSCLOSE      
                MDREAD
@@ -48,8 +49,8 @@ src:
 ;
 
 blockedby:
-| CHARI { $1 }
-| CHARO { $1 }
+| CHARI  { $1 }
+| CHARO  { $1 }
 | BLKANY { $1 }
 ;
 
@@ -73,6 +74,7 @@ state:
 | STSCLOSE { $1 }
 | CHARI { $1 }
 | CHARO { $1 }
+| CHARR { $1 }
 ;
 
 firstflag:

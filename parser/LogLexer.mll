@@ -15,7 +15,7 @@ let digit        = ['0'-'9']
 let intval       = digit+
 let nl           = ['\n']
 let ws           = [' ' '\t'] 
-
+ 
 rule token = parse
   | 'r'             {MDREAD ('r')}
   | 'w'             {MDWRITE ('w')}
@@ -36,6 +36,7 @@ rule token = parse
   | 'C'             {STSCLOSE ('C')}
   | 'I'             {CHARI ('I')}
   | 'O'             {CHARO ('O')}
+  | 'R'             {CHARR ('R')}
   | '|'             {NDCHOICE}
   | '#'             {inc_lnum lexbuf; HASH}
   | ws+             {token lexbuf}
