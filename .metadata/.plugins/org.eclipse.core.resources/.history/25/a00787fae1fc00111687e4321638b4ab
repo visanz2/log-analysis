@@ -280,7 +280,7 @@ and the taskID or the boxname of the task\n"
                     raise ArgAst.Compilation_Error
           end in 
           let listarg = ArgAst.read_arguments the_ast in
-            Printf.printf "Reading %d arguments in the option file:\n" (List.length listarg);
+            Printf.printf "Reading %d arguments int the options file:\n" (List.length listarg);
             List.iter 
 							(
 								fun key ->

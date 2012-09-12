@@ -7,6 +7,9 @@ open ArgAst
 		STREAM
 		SAVE
 		HELP
+		OARG
+		CARG
+		BAR
 		EOF
 
 %token <int64>   NUM
@@ -25,8 +28,9 @@ open ArgAst
 %type <ArgAst.sn_ast> src
 
 %%
-
+ 
 src: 
+| OARG BAR src {Empty}
 | EXEC execoption boxnameorid src         { ExecTime ( $2, $3, $4 ) }
 | LISTTIME listtimeoption boxnameorid src { ListTime ( $2, $3, $4 ) }
 | STREAM NUM src                          { Stream ( $2, $3 ) }

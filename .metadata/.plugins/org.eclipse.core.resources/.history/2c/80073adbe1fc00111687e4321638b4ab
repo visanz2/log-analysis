@@ -74,3 +74,52 @@ let read_arguments node =
       | Empty       _ ->  listarg
   in codegen_ 0 node []   
 
+
+
+(* Function for read all the arguments for execution times*)
+let read_arg_exectime node = 
+  let rec codegen_ ind node listexec=
+    match node with
+		 	| ExecTime(option,boxname, _) -> 
+              let item = 
+                match boxname with
+                  | BoxName (name) -> (option ^ "_" ^ (name) )
+                  | ID ( id )-> (option^(Int64.to_string id))  
+              in (codegen_ (ind+1) (exectime_succs node) (item::listexec))
+      | Empty       _ ->  listexec
+			| _ -> listexec
+  in codegen_ 0 node []    
+
+(* Function for read all the arguments for List time*)
+let read_arg_listime node = 
+  let rec codegen_ ind node listtime=
+    match node with
+      | ListTime  ( option, boxname, _ ) -> 
+              let item = 
+                match boxname with
+                  | BoxName (name) -> (option ^ "_" ^ (name) )
+                  | ID ( id )-> ( option  ^ "_" ^ (Int64.to_string id))  
+                in (codegen_ (ind+1) (listtime_succs node) (item::listtime) )
+      | Empty       _ ->  listtime
+			| _ -> listtime
+  in codegen_ 0 node []    
+
+
+(* Function for read all the arguments for streams*)
+let read_arg_stream node = 
+  let rec codegen_ ind node liststream=
+    match node with
+      | Stream (streamid, _) -> codegen_ (ind+1) (stream_succs node) (streamid::liststream)
+      | Empty       _ ->  liststream
+			| _ -> liststream
+  in codegen_ 0 node []    
+
+
+(* Function for read all the arguments for save*)
+let read_arg_save node = 
+  let rec codegen_ ind node filenamesave=
+    match node with
+      | Save (filename, _) -> Printf.printf"hola\n";codegen_ (ind+1) (save_succs node) (filename::filenamesave)
+      | Empty       _ ->  filenamesave
+			| _ -> filenamesave
+  in codegen_ 0 node []    

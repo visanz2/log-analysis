@@ -22,7 +22,7 @@ let intval       = (negative)?(digit+)
 let nl           = ['\n']
 let ws           = [' ' '\t'] 
 
-
+ 
 rule token = parse
   | "--exec"                 {EXEC}
   | "--listtime"             {LISTTIME}
@@ -32,6 +32,9 @@ rule token = parse
   | "blocked"|"b"|"B"  as b  {BLOCK (b)}
   | "read"|"r"|"R"     as r  {READ  (r)}
   | "write"|"w"|"W"    as w  {WRITE (w)}
+	| '{' 										 {OARG}
+	| '}'											 {CARG}
+	| '\\'										 {BAR}
   | ws+                      {token lexbuf}
   | nl+                      {token lexbuf}
   | intval as num            {NUM(Int64.of_string num)}   
