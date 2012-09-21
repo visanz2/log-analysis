@@ -24,6 +24,7 @@ rule token = parse
   | 'P'                   {PCOMP ('P')}
   | 'R'                   {SREPL ('R')}
   | 'I'                   {PREPL ('I')}
+	| 'F'										{FIN   ('F')}
   | "Log format version"  {LOGVERSION}
   | '.'                   {DOT}  
   | '('                   {OBRACKET}

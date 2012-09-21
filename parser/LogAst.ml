@@ -18,8 +18,9 @@ type list_tag_value = TagValue of int64 (* Tag Value *)
 type more_information = MoreInformation of int64 (* Tag Id *)
                       * list_tag_value list (* List of simbolic name*)
 
-type mess_trace  = MessTrace of mess_entry (* Message Entry *) 
+type mess_trace  = MessTraceWithInfo of mess_entry (* Message Entry *) 
                  * more_information (* Mori Information *)
+								 | MessTrace of mess_entry (* Message Entry *) 
                  | Empty
 
 type stream_entry = StreamEntry of int64 (* Stream ID *)
@@ -166,7 +167,7 @@ let t_exectime node taskidsearch =
       | TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
             if (Int64.compare task_id taskidsearch) == 0 then
             (
-              "Ended Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time))
+							codegen_ (ind+1) (node_succs node)  ^ "Ended Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time))
               ^ "\nDiference between the real execution time and execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time)) ^ " - "  
               ^ (Int64.to_string(exec_time)) ^ " = " ^ (Int64.to_string((Int64.sub (Int64.sub tims_stamp creation_time) exec_time))) ^ "\n\n" 
             )
@@ -182,14 +183,14 @@ let t_blocktime node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskBlocked (tims_stamp, _, task_id, exec_time, _, _) ->  
-          if (Int64.compare task_id taskidsearch) == 0 then
+          	if (Int64.compare task_id taskidsearch) == 0 then
             (
                 codegen_ (ind+1) (node_succs node) 
                 ^ "Blocked Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time in the moment when the task is blocked is: " 
                 ^ (Int64.to_string((Int64.sub tims_stamp exec_time))) ^ "\n\n"
             )
-          else 
-            codegen_ (ind+1) (node_succs node)              
+          	else 
+            	codegen_ (ind+1) (node_succs node)              
       | Empty       _ -> "" 
       | _       ->  codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
@@ -378,3 +379,129 @@ let t_search_stream node streamidsearch workerid =
   in codegen_ 0 node
 
 
+
+(* Function for search the parents in the tree *)
+let t_search_stream_read node streamidsearch workerid = 
+  let rec codegen_ ind node = 
+    match node with
+      | TaskBlocked (_, _, _, _, sttrace, _) ->          
+            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+																								if ((streamentry_mode streamentry) == 'r') then
+                                                	string_of_int workerid ^ " "
+                                                else ("")
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+       | TaskEnded (_, _, _, _, sttrace, _) ->    
+            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+                                                if ((streamentry_mode streamentry) == 'r') then
+                                                	string_of_int workerid ^ " "
+                                                else ("")
+                                                
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+      | Empty  _ -> ("")   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node
+
+
+
+(* Function for search the son in the tree *)
+let t_search_stream_write node streamidsearch workerid = 
+  let rec codegen_ ind node = 
+    match node with
+      | TaskBlocked (_, _, _, _, sttrace, _) ->          
+            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+																								if ((streamentry_mode streamentry) == 'w') then
+                                                	string_of_int workerid ^ " "
+                                                else ("")
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+       | TaskEnded (_, _, _, _, sttrace, _) ->    
+            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+                                                if ((streamentry_mode streamentry) == 'w') then
+                                                	string_of_int workerid ^ " "
+                                                else ("")
+                                                
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+      | Empty  _ -> ("")   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node
+	
+	
+(* Return the last number of stream *)
+let t_search_stream_read node streamidsearch workerid = 
+  let rec codegen_ ind node = 
+    match node with
+      | TaskBlocked (_, _, _, _, sttrace, _) ->          
+            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+																								if ((streamentry_mode streamentry) == 'r') then
+                                                	string_of_int workerid ^ " "
+                                                else ("")
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+       | TaskEnded (_, _, _, _, sttrace, _) ->    
+            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              (
+                                                if ((streamentry_mode streamentry) == 'r') then
+                                                	string_of_int workerid ^ " "
+                                                else ("")
+                                                
+                                              )
+                                              else ("")
+                                          | _ -> ("")
+                                  )
+                              sttrace )
+      | Empty  _ -> ("")   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node

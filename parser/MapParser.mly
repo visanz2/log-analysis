@@ -3,12 +3,12 @@ open MapAst
 %}
 
 %token  SMALLER
-		GREATER
-		DOT
+				GREATER
+				DOT
         OBRACKET
         DIV
-		CBRACKET  
-		LOGVERSION
+				CBRACKET  
+				LOGVERSION
         SINCE 
         COLON     
         HASH
@@ -17,9 +17,10 @@ open MapAst
 %token <int64>   NUM
 
 %token <char>  SCOMP
-			   PCOMP
-			   SREPL
-			   PREPL
+			   			 PCOMP
+      			   SREPL
+      			   PREPL
+      					FIN
 
 %token <string> BOXNAME 
                 
@@ -51,6 +52,7 @@ pos:
 | SREPL NUM { PositionWithNum( $1, $2) }
 | PREPL     { PositionWithoutNum( $1 ) }
 | PREPL NUM { PositionWithNum( $1, $2) }
+| FIN       { PositionWithoutNum( $1 ) }
 ; 
  boxnames:
 | SMALLER BOXNAME GREATER { $2 }

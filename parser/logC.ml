@@ -7,7 +7,9 @@ type args = {mutable filename: string}
 
 (* Variables for use the arguments *)
 let savename = ref ""
+let father = ref ""
 let resultscommandline = ref ""
+let resultsdotfile = ref "digraph G {\n"
 let optionexec     = ref false
 let optionlisttime = ref false
 let execoption   = [("e", true); ("ended", true); ("b", false); ("blocked", false)]
@@ -475,7 +477,6 @@ and the taskID or the boxname of the task\n"
 
 
 
-
 (* Principal menu of the program *)
         let rec menu ind =
           Printf.printf "\nMenu: \n";
@@ -489,6 +490,7 @@ and the taskID or the boxname of the task\n"
           Printf.printf "7.- List of time of write's record time for task searched with Boxname\n";
           Printf.printf "8.- List of time of write's record time for task searched with Task ID\n";
           Printf.printf "9.- Who read/write the specific stream\n";
+					Printf.printf "10.- Show the worker tree to the program\n";
           flush stdout;
           let _ = 
             match (input_line stdin)  with 
@@ -501,7 +503,7 @@ and the taskID or the boxname of the task\n"
                           if (var < (List.length listlog)) then
                           (
                             let timeexec = t_exectime (List.nth listlog var) taskidsearch in 
-                              if (timeexec == "") then
+                              if ( (String.compare timeexec "") == 0) then
                               (
                                 searchexecutiontime (var+1)
                               )
@@ -527,7 +529,7 @@ and the taskID or the boxname of the task\n"
                             if (var < (List.length listlog)) then
                             (
                               let timeexec = t_exectime (List.nth listlog var) taskidsearch in
-                                if (timeexec == "") then
+                                 if ( (String.compare timeexec "") == 0) then
                                 (
                                   searchexecutiontime (var+1)
                                 )
@@ -551,7 +553,7 @@ and the taskID or the boxname of the task\n"
                           if (var < (List.length listlog)) then
                           (
                             let blocktime = t_blocktime (List.nth listlog var) taskidsearch in
-                              if ( blocktime == "" ) then
+                              if ( (String.compare blocktime "") == 0) then
                               (
                                 searchexecutiontime (var+1)
                               )
@@ -578,7 +580,7 @@ and the taskID or the boxname of the task\n"
                             if (var < (List.length listlog)) then
                             (
                               let blocktime = t_blocktime (List.nth listlog var) taskidsearch in
-                                if ( blocktime == "") then
+                                if ( (String.compare blocktime "") == 0) then
                                 (
                                   searchexecutiontime (var+1)
                                 )
@@ -602,7 +604,7 @@ and the taskID or the boxname of the task\n"
                           if (var < (List.length listlog)) then
                           (
                             let listread =  t_list_rec_read (List.nth listlog var) taskidsearch in
-                              if ( listread == "" ) then
+                              if ( (String.compare listread "") == 0) then
                               (
                                 searchexecutiontime (var+1)
                               )
@@ -629,7 +631,7 @@ and the taskID or the boxname of the task\n"
                             if (var < (List.length listlog)) then
                             (
                               let listread = t_list_rec_read (List.nth listlog var) taskidsearch in
-                                if ( listread == "") then
+                                if ( (String.compare listread "") == 0) then
                                 (
                                   searchexecutiontime (var+1)
                                 )
@@ -653,7 +655,7 @@ and the taskID or the boxname of the task\n"
                           if (var < (List.length listlog)) then
                           (
                             let listwrite = t_list_rec_write (List.nth listlog var) taskidsearch in 
-                              if ( listwrite == "" ) then
+                              if ( (String.compare listwrite "") == 0) then
                               (
                                 searchexecutiontime (var+1)
                               )
@@ -680,7 +682,7 @@ and the taskID or the boxname of the task\n"
                             if (var < (List.length listlog)) then
                             (
                               let listwrite = t_list_rec_write (List.nth listlog var) taskidsearch in 
-                                if ( listwrite == "") then
+                                if ( (String.compare listwrite "") == 0) then
                                 (
                                   searchexecutiontime (var+1)
                                 )
@@ -713,7 +715,53 @@ and the taskID or the boxname of the task\n"
                               menu (ind+1)
                             )
                           in searchstreams 0 
-
+              | "10" -> (* Menu 10 - Tree of the programme*)
+											let channel = open_out "graph.dot" in
+											let rec count streamid =
+                    		let rec searchstreamsparents var =
+													if (var < (List.length listlog)) then
+                        		(
+                    					let varfather = (t_search_stream_write (List.nth listlog var) streamid var ) in
+                    				 	if ((String.length varfather) > 0) then
+                    					(
+																father := varfather ;
+                    						Printf.printf "\n Father:%s " varfather;
+                    					)  
+                    					else ();
+                            	searchstreamsparents (var+1) 
+                          	)
+                          	else
+                          	()
+                       	in searchstreamsparents 0;
+                			let rec searchstreamssons var =
+                				if (var < (List.length listlog)) then
+                    		(
+													let son = (t_search_stream_read (List.nth listlog var) streamid var ) in
+                    				 if ((String.length son) > 0) then
+                    					(
+																resultsdotfile := !resultsdotfile ^ !father ^ "->" ^ son ^ ";\n";
+                    						Printf.printf " Son:%s  father:%s" son !father;
+                    					)  
+                    					else (); 
+                        	searchstreamssons (var+1) 
+                      	)
+                      	else
+                      	(
+                					if(streamid < (Int64.of_int 30)) then
+                					(
+                						count (Int64.add streamid Int64.one)
+                					)
+                					else
+                					()
+                      	)
+                   	in searchstreamssons 0
+              		in count Int64.one;
+                	
+                    output_string channel (!resultsdotfile ^ "\n}");
+                    close_out channel;
+                    Printf.printf "The results are saving in graph.dot. For convert the graph, put in the console 'dot -Tpdf graph.dot -O'.\n";
+                     (*Unix.execvp "dot" [|"-Tpdf"; "graph.dot"; "-O"|];*)
+                  
               | _ -> Printf.printf "It's not a good option.\n"; menu (ind+1)
     in Printf.printf "\n"
             in menu 0;
@@ -721,3 +769,8 @@ and the taskID or the boxname of the task\n"
   
 
 let _ = Printexc.print main () ;;
+
+
+
+
+

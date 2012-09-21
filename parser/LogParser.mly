@@ -100,8 +100,10 @@ thirdflag:
 ;
 
 messtrace:
-| messentry moreinformation SMC { MessTrace ($1, $2) }
-| messentry moreinformation COMA { MessTrace ($1, $2) }
+| messentry moreinformation SMC { MessTraceWithInfo ($1, $2) }
+| messentry moreinformation COMA { MessTraceWithInfo ($1, $2) }
+| messentry SMC { MessTrace ($1) }
+| messentry COMA { MessTrace ($1) }
 ;
 
 moreinformation:
