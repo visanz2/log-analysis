@@ -9,6 +9,7 @@ type args = {mutable filename: string}
 let savename = ref ""
 let father = ref ""
 let resultscommandline = ref ""
+let streamidmax = ref Int64.zero
 let resultsdotfile = ref "digraph G {\n"
 let optionexec     = ref false
 let optionlisttime = ref false
@@ -24,6 +25,10 @@ let contains s1 s2 =
     with Not_found -> false
 ;;
 
+let my_max = function
+    [] -> invalid_arg "empty list"
+  | x::xs -> List.fold_left max x xs
+;;
 
 (* Search the log files and the map file*)
 let searchfilesasd mapfile =
@@ -717,6 +722,22 @@ and the taskID or the boxname of the task\n"
                           in searchstreams 0 
               | "10" -> (* Menu 10 - Tree of the programme*)
 											let channel = open_out "graph.dot" in
+											let rec streammax var =
+												if (var < (List.length listlog)) then
+                        		(
+															(*Printf.printf "todo -> %s\n" (t_last_number_stream (List.nth listlog var)); *)
+															let varmax = (my_max (t_last_number_stream (List.nth listlog var))) in
+  															(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
+  															if (Int64.compare !streamidmax varmax < 0 ) then
+  																(
+  																	streamidmax := varmax;
+  																)
+  																else ();
+  																streammax (var+1);
+    														)
+    														else
+    														();
+														in streammax 0;
 											let rec count streamid =
                     		let rec searchstreamsparents var =
 													if (var < (List.length listlog)) then
@@ -725,7 +746,7 @@ and the taskID or the boxname of the task\n"
                     				 	if ((String.length varfather) > 0) then
                     					(
 																father := varfather ;
-                    						Printf.printf "\n Father:%s " varfather;
+                    						(*Printf.printf "\n Father:%s " varfather;*)
                     					)  
                     					else ();
                             	searchstreamsparents (var+1) 
@@ -733,35 +754,35 @@ and the taskID or the boxname of the task\n"
                           	else
                           	()
                        	in searchstreamsparents 0;
-                			let rec searchstreamssons var =
-                				if (var < (List.length listlog)) then
-                    		(
-													let son = (t_search_stream_read (List.nth listlog var) streamid var ) in
-                    				 if ((String.length son) > 0) then
-                    					(
-																resultsdotfile := !resultsdotfile ^ !father ^ "->" ^ son ^ ";\n";
-                    						Printf.printf " Son:%s  father:%s" son !father;
-                    					)  
-                    					else (); 
-                        	searchstreamssons (var+1) 
-                      	)
-                      	else
-                      	(
-                					if(streamid < (Int64.of_int 30)) then
-                					(
-                						count (Int64.add streamid Int64.one)
-                					)
-                					else
-                					()
-                      	)
-                   	in searchstreamssons 0
+                				let rec searchstreamssons var =
+                  				if (var < (List.length listlog)) then
+                      		(
+  													let son = (t_search_stream_read (List.nth listlog var) streamid var ) in
+                      				 if ((String.length son) > 0) then
+                      					(
+  																resultsdotfile := !resultsdotfile ^ !father ^ "->" ^ son ^ ";\n";
+                      						(*Printf.printf " Son:%s  father:%s" son !father;*)
+                      					)  
+                      					else (); 
+                          	searchstreamssons (var+1) 
+                        	)
+                        	else
+                        	(
+														if ( Int64.compare streamid !streamidmax < 0) then
+                  					(
+                  						count (Int64.add streamid Int64.one)
+                  					)
+                  					else
+                  					()
+                        	)
+                   		in searchstreamssons 0
               		in count Int64.one;
                 	
                     output_string channel (!resultsdotfile ^ "\n}");
                     close_out channel;
                     Printf.printf "The results are saving in graph.dot. For convert the graph, put in the console 'dot -Tpdf graph.dot -O'.\n";
                      (*Unix.execvp "dot" [|"-Tpdf"; "graph.dot"; "-O"|];*)
-                  
+                  	menu (ind+1)
               | _ -> Printf.printf "It's not a good option.\n"; menu (ind+1)
     in Printf.printf "\n"
             in menu 0;

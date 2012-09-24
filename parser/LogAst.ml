@@ -452,7 +452,7 @@ let t_search_stream_write node streamidsearch workerid =
                                               if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 if ((streamentry_mode streamentry) == 'w') then
-                                                	string_of_int workerid ^ " "
+                                                	(string_of_int workerid ^ " ")
                                                 else ("")
                                                 
                                               )
@@ -466,42 +466,30 @@ let t_search_stream_write node streamidsearch workerid =
 	
 	
 (* Return the last number of stream *)
-let t_search_stream_read node streamidsearch workerid = 
-  let rec codegen_ ind node = 
+let t_last_number_stream node = 
+  let rec codegen_ ind node  = 
     match node with
       | TaskBlocked (_, _, _, _, sttrace, _) ->          
-            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+            (List.map  (* Read the information about stream of the write's packets *)
                                   (
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) -> 
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
-                                              (
-																								if ((streamentry_mode streamentry) == 'r') then
-                                                	string_of_int workerid ^ " "
-                                                else ("")
-                                              )
-                                              else ("")
-                                          | _ -> ("")
+																						(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
+                                              	streamentry_streanid streamentry
+                                          | _ -> (Int64.zero)
                                   )
                               sttrace )
        | TaskEnded (_, _, _, _, sttrace, _) ->    
-            String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+            (List.map  (* Read the information about stream of the write's packets *)
                                   (
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) -> 
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
-                                              (
-                                                if ((streamentry_mode streamentry) == 'r') then
-                                                	string_of_int workerid ^ " "
-                                                else ("")
-                                                
-                                              )
-                                              else ("")
-                                          | _ -> ("")
+                                                streamentry_streanid streamentry
+                                          | _ -> (Int64.zero)
                                   )
                               sttrace )
-      | Empty  _ -> ("")   
+      | Empty  _ -> ([])   
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
