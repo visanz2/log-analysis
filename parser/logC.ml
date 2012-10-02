@@ -9,6 +9,7 @@ type args = {mutable filename: string}
 let savename = ref ""
 let father = ref ""
 let resultscommandline = ref ""
+let relationfatherson = ref ""
 let streamidmax = ref Int64.zero
 let resultsdotfile = ref "digraph G {\n"
 let optionexec     = ref false
@@ -725,7 +726,7 @@ and the taskID or the boxname of the task\n"
 											let rec streammax var =
 												if (var < (List.length listlog)) then
                         		(
-															(*Printf.printf "todo -> %s\n" (t_last_number_stream (List.nth listlog var)); *)
+															(*Printf.printf "todo -> %d\n" ( List.length (t_last_number_stream (List.nth listlog var))); *)
 															let varmax = (my_max (t_last_number_stream (List.nth listlog var))) in
   															(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
   															if (Int64.compare !streamidmax varmax < 0 ) then
@@ -738,21 +739,39 @@ and the taskID or the boxname of the task\n"
     														else
     														();
 														in streammax 0;
+														
+																											(**)
+														resultsdotfile := "digraph asde91 {\n ranksep=.75; size = \"7.5,7.5\";
+                                    {
+                                    node [shape=plaintext, fontsize=16];\n StreamID->";
+    												let rec allstreams var =
+    													if (Int64.compare !streamidmax var > 0 ) then
+                            		(
+																	resultsdotfile := !resultsdotfile ^ (Int64.to_string var) ^ " -> ";
+																	allstreams (Int64.add Int64.one var);
+    														)
+    													else
+															(
+																	resultsdotfile := !resultsdotfile ^ (Int64.to_string var)  ^ ";";
+    													)
+                           	in allstreams Int64.one;
+
+														resultsdotfile := !resultsdotfile ^ "\"11\";\n} { rank = same; \"WorkerId:StreamId\" ; }; node [shape=box];"; 
+
 											let rec count streamid =
                     		let rec searchstreamsparents var =
 													if (var < (List.length listlog)) then
                         		(
-                    					let varfather = (t_search_stream_write (List.nth listlog var) streamid var ) in
-                    				 	if ((String.length varfather) > 0) then
-                    					(
-																father := varfather ;
-                    						(*Printf.printf "\n Father:%s " varfather;*)
-                    					)  
-                    					else ();
-                            	searchstreamsparents (var+1) 
-                          	)
-                          	else
-                          	()
+                    					let varfather = (t_search_stream_write (List.nth listlog var) streamid var ) in 
+                      				 	if ((String.length varfather) > 0) then
+                      					(
+  																father := "\"" ^ (String.sub varfather 0 (String.index_from varfather 0 '/')) ^":"^ (Int64.to_string streamid) ^ "\"";
+                      					)  
+                      					else ();
+                              	searchstreamsparents (var+1) 
+                            	)
+                            	else
+                            	()
                        	in searchstreamsparents 0;
                 				let rec searchstreamssons var =
                   				if (var < (List.length listlog)) then
@@ -760,8 +779,11 @@ and the taskID or the boxname of the task\n"
   													let son = (t_search_stream_read (List.nth listlog var) streamid var ) in
                       				 if ((String.length son) > 0) then
                       					(
-  																resultsdotfile := !resultsdotfile ^ !father ^ "->" ^ son ^ ";\n";
-                      						(*Printf.printf " Son:%s  father:%s" son !father;*)
+																	relationfatherson := !relationfatherson ^  !father ^ " -> " ^ "\"" ^ (String.sub son 0 (String.index_from son 0 '/')) 
+																	^":"^ (Int64.to_string streamid) ^ "\"";
+																	
+																	resultsdotfile := !resultsdotfile ^ "\n{ rank = same; \"" ^ (Int64.to_string streamid) ^ "\";" ^ !father ^ ";" 
+																	^  "\"" ^ (String.sub son 0 (String.index_from son 0 '/')) ^":"^ (Int64.to_string streamid) ^ "\" ; }";
                       					)  
                       					else (); 
                           	searchstreamssons (var+1) 
@@ -773,16 +795,23 @@ and the taskID or the boxname of the task\n"
                   						count (Int64.add streamid Int64.one)
                   					)
                   					else
-                  					()
+                  					(
+														)
                         	)
                    		in searchstreamssons 0
               		in count Int64.one;
-                	
-                    output_string channel (!resultsdotfile ^ "\n}");
+                	 
+                    output_string channel (!resultsdotfile ^ !relationfatherson ^ "\n}");
                     close_out channel;
-                    Printf.printf "The results are saving in graph.dot. For convert the graph, put in the console 'dot -Tpdf graph.dot -O'.\n";
+                    Printf.printf "The results are saving in graph.dot. For convert the graph, put in the console 'dot -Tpdf graph.dot -O'.";
+										Printf.printf "The graph show one tree with all the stream numbers and the workerId who works with this streamID." ;
+										Printf.printf "All the dependences are marked with arrows. For example, x -> y, means that y wait for x because x write in the stream and y read the stream.\n";
                      (*Unix.execvp "dot" [|"-Tpdf"; "graph.dot"; "-O"|];*)
                   	menu (ind+1)
+							| "11" -> 
+							 					
+                              Printf.printf "Impossible to find the task in the load log files.\n";
+
               | _ -> Printf.printf "It's not a good option.\n"; menu (ind+1)
     in Printf.printf "\n"
             in menu 0;

@@ -355,7 +355,7 @@ let t_search_stream node streamidsearch workerid =
                                               else ("")
                                           | _ -> ("")
                                   )
-                              sttrace )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
             let _ = codegen_ (ind+1) (node_succs node) in
               String.concat "" (List.map  (* Read the information about stream of the write's packets *)
@@ -373,7 +373,7 @@ let t_search_stream node streamidsearch workerid =
                                               else ("")
                                           | _ -> ("")
                                   )
-                              sttrace )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
       | Empty  _ -> ("")   
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
@@ -393,13 +393,13 @@ let t_search_stream_read node streamidsearch workerid =
                                               if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
 																								if ((streamentry_mode streamentry) == 'r') then
-                                                	string_of_int workerid ^ " "
+                                                	string_of_int workerid ^ "/"
                                                 else ("")
                                               )
                                               else ("")
                                           | _ -> ("")
                                   )
-                              sttrace )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
        | TaskEnded (_, _, _, _, sttrace, _) ->    
             String.concat "" (List.map  (* Read the information about stream of the write's packets *)
                                   (
@@ -409,14 +409,13 @@ let t_search_stream_read node streamidsearch workerid =
                                               if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 if ((streamentry_mode streamentry) == 'r') then
-                                                	string_of_int workerid ^ " "
+                                                	string_of_int workerid ^ "/"
                                                 else ("")
-                                                
                                               )
                                               else ("")
                                           | _ -> ("")
                                   )
-                              sttrace )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
       | Empty  _ -> ("")   
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
@@ -432,34 +431,34 @@ let t_search_stream_write node streamidsearch workerid =
                                   (
                                   function l ->
                                       match l with
-                                          | StreamTrace (streamentry) -> 
+                                          | StreamTrace (streamentry) -> 																					
                                               if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
 																								if ((streamentry_mode streamentry) == 'w') then
-                                                	string_of_int workerid ^ " "
+                                                	string_of_int workerid ^ "/"
                                                 else ("")
                                               )
                                               else ("")
                                           | _ -> ("")
                                   )
-                              sttrace )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
        | TaskEnded (_, _, _, _, sttrace, _) ->    
             String.concat "" (List.map  (* Read the information about stream of the write's packets *)
                                   (
                                   function l ->
                                       match l with
-                                          | StreamTrace (streamentry) -> 
+                                          | StreamTrace (streamentry) ->
                                               if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 if ((streamentry_mode streamentry) == 'w') then
-                                                	(string_of_int workerid ^ " ")
+                                                	string_of_int workerid ^ "/"
                                                 else ("")
                                                 
                                               )
                                               else ("")
                                           | _ -> ("")
                                   )
-                              sttrace )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
       | Empty  _ -> ("")   
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
@@ -479,7 +478,8 @@ let t_last_number_stream node =
                                               	streamentry_streanid streamentry
                                           | _ -> (Int64.zero)
                                   )
-                              sttrace )
+                              sttrace 
+											 )  @ codegen_ (ind+1) (node_succs node);
        | TaskEnded (_, _, _, _, sttrace, _) ->    
             (List.map  (* Read the information about stream of the write's packets *)
                                   (
@@ -489,7 +489,40 @@ let t_last_number_stream node =
                                                 streamentry_streanid streamentry
                                           | _ -> (Int64.zero)
                                   )
-                              sttrace )
+                              sttrace ) @ codegen_ (ind+1) (node_succs node);
+      | Empty  _ -> ([])   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node
+
+
+(* Task for create the graph *)
+ 
+
+
+let t_create_graph_task node = 
+  let rec codegen_ ind node  = 
+    match node with
+      | TaskBlocked (_, _,taskid, _, sttrace, _) ->       Printf.printf "T-> %Ld" taskid;   
+            (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+																						(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
+                                              	streamentry_streanid streamentry
+                                          | _ -> (Int64.zero)
+                                  )
+                              sttrace );codegen_ (ind+1) (node_succs node)
+       | TaskEnded (_, taskid, _, _, sttrace, _) ->        Printf.printf "Te-> %Ld" taskid;     
+            (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l ->
+                                      match l with
+                                          | StreamTrace (streamentry) -> 
+                                                streamentry_streanid streamentry
+                                          | _ -> (Int64.zero)
+                                  )
+                              sttrace );codegen_ (ind+1) (node_succs node)
       | Empty  _ -> ([])   
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
