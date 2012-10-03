@@ -516,8 +516,7 @@ and the taskID or the boxname of the task\n"
           Printf.printf "7.- List of time of write's record time for task searched with Boxname\n";
           Printf.printf "8.- List of time of write's record time for task searched with Task ID\n";
           Printf.printf "9.- Who read/write the specific stream\n";
-					Printf.printf "10.- Save the dependence tree to the program in a dot file\n";
-					Printf.printf "11.- Save the TaskId tree to the program in a dot file\n";
+					Printf.printf "10.- Show the worker tree to the program\n";
           flush stdout;
           let _ = 
             match (input_line stdin)  with 

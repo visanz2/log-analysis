@@ -495,34 +495,23 @@ let t_last_number_stream node =
   in codegen_ 0 node
 
 
-(* Task for create the graph *)
- 
-
-
-let t_create_graph_task node = 
-  let rec codegen_ ind node  = 
+	
+(* This function needs the Task ID and it returns the execution time of blocked Task*)
+let t_create_graph node taskidsearch workerid =   
+  let rec codegen_ ind node =
     match node with
-      | TaskBlocked (_, _,taskid, _, sttrace, _) ->       Printf.printf "T-> %Ld" taskid;   
-            (List.map  (* Read the information about stream of the write's packets *)
-                                  (
-                                  function l ->
-                                      match l with
-                                          | StreamTrace (streamentry) -> 
-																						(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
-                                              	streamentry_streanid streamentry
-                                          | _ -> (Int64.zero)
-                                  )
-                              sttrace );codegen_ (ind+1) (node_succs node)
-       | TaskEnded (_, taskid, _, _, sttrace, _) ->        Printf.printf "Te-> %Ld" taskid;     
-            (List.map  (* Read the information about stream of the write's packets *)
-                                  (
-                                  function l ->
-                                      match l with
-                                          | StreamTrace (streamentry) -> 
-                                                streamentry_streanid streamentry
-                                          | _ -> (Int64.zero)
-                                  )
-                              sttrace );codegen_ (ind+1) (node_succs node)
-      | Empty  _ -> ([])   
-      | _        -> codegen_ (ind+1) (node_succs node)
+		 | TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
+            if (Int64.compare task_id taskidsearch) == 0 then
+            (
+								[( (Int64.add creation_time exec_time), task_id, workerid)]; 
+            )
+            else
+            (
+              codegen_ (ind+1) (node_succs node);
+            )        
+      | Empty       _ -> [] 
+      | _       ->  codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
+	
+	
+	
