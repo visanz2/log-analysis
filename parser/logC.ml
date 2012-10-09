@@ -10,11 +10,18 @@ let savename = ref ""
 let father = ref ""
 let resultscommandline = ref ""
 let relationfatherson = ref ""
+let nodeidsearch = ref Int64.zero
+let localidsearch = ref Int64.zero
+let latency = ref Int64.zero
 let vectorgraph = ref []
+let varmessage = ref []
+let vartaskidfinded = ref false
+let messageoptions = ref false
 let streamidmax = ref Int64.zero
 let resultsdotfile = ref "digraph G {\n"
 let resultgraphfile = ref ""
 let varresultgraphfile = ref ""
+let commandmessageid = ref ""
 let optionexec     = ref false
 let optionlisttime = ref false
 let execoption   = [("e", true); ("ended", true); ("b", false); ("blocked", false)]
@@ -446,6 +453,233 @@ and the taskID or the boxname of the task\n"
 	), (" With this argument you can put the file with all the arguments. The program read the file similar a if you put the arguments in the console. The file must be .log. \n"));
 
 
+(* Lookup Command Parameter *)
+("--lookup", 
+
+      Arg.String 
+      (
+       fun key -> 
+			 (
+          let taskidsearch = try  Int64.of_string(key) 
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+          	in
+  						let rec graphtask var =
+  							if (var < (List.length listlog)) then
+            		(
+  								t_look_up_message (List.nth listlog var) taskidsearch; 
+        					graphtask (var+1);  
+                )
+                else
+                (
+									Printf.printf "\n";
+  							)
+           	in graphtask 0; messageoptions:= true;
+			 )
+			)
+, 
+
+("this argument is for show all the Message for one Task ID. It's necessary put the Task ID.  \n"));
+
+
+(* Latency Command Parameter *)
+("--latency", 
+	Arg.Tuple 
+    [
+      Arg.String (* Message ID *) 
+      (
+        (
+          fun key -> 
+            let varnode = try  Int64.of_string (String.sub key 0 (String.index_from key 0 '.'))  
+					 		with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+								in nodeidsearch := varnode;
+								let varlocal =  try  Int64.of_string (String.sub key ((String.index_from key 0 '.')+1) ((String.length key)-(String.index_from key 0 '.')-1)) 
+									with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+									in localidsearch := varlocal;
+        )
+      ); 
+
+      Arg.String (* Task Id *)
+      (
+       fun key -> 
+			 (
+          let taskidsearch = try  Int64.of_string(key)
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+          	in
+							let rec graphtask var =
+								if (var < (List.length listlog)) then
+            		(
+									varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+        					graphtask (var+1);  
+                )
+                else
+                (
+									Printf.printf "";
+								);
+         			in graphtask 0;
+
+							let rec findmessage var =
+								if ( !vartaskidfinded == false) then
+								(
+									let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
+											if ( ((Int64.compare nodeid !nodeidsearch) == 0) && ((Int64.compare localid !localidsearch) == 0)
+												 && (io == 'I')) then
+													( 
+														if ((Int64.compare !latency Int64.zero) == 0) then
+														(
+															latency := timestamp;
+															
+														)
+														else();
+														if ( (Int64.compare taskid taskidsearch) == 0) then
+														(
+															latency := Int64.sub timestamp !latency;
+															vartaskidfinded := true;
+														) 
+														else
+														();
+
+											let rec outmessage varout =
+												let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
+													if (ioout == 'O') then
+													(
+														nodeidsearch := nodeidout;
+														localidsearch := localidout;
+														
+														findmessage 0;
+														if (  (varout+1) < (List.length !varmessage)) then
+														(
+															 outmessage (varout+1);
+														)
+														else 
+														(
+														);
+															
+													)
+													else
+													(
+													);
+												in outmessage (var+1);
+											
+										)
+										else
+										(
+											if (  (var+1) < (List.length !varmessage)) then
+											(
+													findmessage (var+1);
+											)
+											else ();
+										);
+								)
+								else
+								(
+								);
+							in findmessage 0; Printf.printf "\nLatency is %Ld\n" !latency; vartaskidfinded := false; messageoptions:= true;
+			 )
+			)
+		]
+, 
+
+(" This argument show the time use for arrive the message the one point a another point. The argument needs Message ID [NodeID.LocalID] and TaskId"
+  ^ " The Message ID says de begin and the Task ID says the end point. \n"));
+
+
+(* Trace Command Parameter *)
+("--trace", 
+
+  Arg.Tuple 
+    [
+      Arg.String (* Message ID *) 
+      (
+        (
+          fun key -> 
+            let varnode = try  Int64.of_string (String.sub key 0 (String.index_from key 0 '.'))  
+					 		with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+								in nodeidsearch := varnode;
+								let varlocal =  try  Int64.of_string (String.sub key ((String.index_from key 0 '.')+1) ((String.length key)-(String.index_from key 0 '.')-1)) 
+									with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+									in localidsearch := varlocal;
+        )
+      ); 
+
+      Arg.String (* Task Id *)
+      (
+       fun key -> 
+			 (
+          let taskidsearch = try  Int64.of_string(key)
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+          	in
+							let rec graphtask var =
+								if (var < (List.length listlog)) then
+            		(
+									varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+        					graphtask (var+1);  
+                )
+                else
+                (
+									Printf.printf "\n";
+								);
+         			in graphtask 0;
+
+							let rec findmessage var =
+								if ( !vartaskidfinded == false) then
+								(
+									
+									let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
+											if ( ((Int64.compare nodeid !nodeidsearch) == 0) && ((Int64.compare localid !localidsearch) == 0)
+												 && (io == 'I')) then
+													( 
+														
+														if ( (Int64.compare taskid taskidsearch) == 0) then
+														(
+															vartaskidfinded := true;
+														) 
+														else
+														();
+
+												let rec outmessage varout =
+													let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
+														if (ioout == 'O') then
+														(
+															nodeidsearch := nodeidout;
+															localidsearch := localidout;
+															Printf.printf "%Ld.%Ld : %Ld   ->   %Ld.%Ld : %Ld\n" nodeid localid timestamp nodeidout localidout timestampout;
+															findmessage 0;
+															if (  (varout+1) < (List.length !varmessage)) then
+															(
+																 outmessage (varout+1);
+															)
+															else 
+															(
+															);
+																
+														)
+														else
+														(
+														);
+													in outmessage (var+1);
+  																					
+													)
+													else
+													(
+														if (  (var+1) < (List.length !varmessage)) then
+														(
+																findmessage (var+1);
+														)
+														else ();
+													);
+								)
+								else
+								(
+								);
+							in findmessage 0; vartaskidfinded := false; messageoptions:= true;
+				
+				)
+			)
+		]
+, 
+
+(" Show the trace of one message. This argument needs a MessageID [NodeID.LocalID] and one TaskID. "
+  ^ " The Message ID says de begin and the Task ID says the end point. \n"));
 
 ("--stream",
   Arg.Int  
@@ -485,6 +719,10 @@ and the taskID or the boxname of the task\n"
   )
 ;
 
+(* Message option *)
+ 	if (!messageoptions) then
+		exit 0
+  else();
 
 
 (* If the option save is used *)
@@ -880,6 +1118,187 @@ and the taskID or the boxname of the task\n"
       										Printf.printf "All the dependences are marked with arrows. For example, x -> y, means that y wait for x because x write in the stream and y read the stream.\n";
                            (*Unix.execvp "dot" [|"-Tpdf"; "graph.dot"; "-O"|];*)
                         	menu (ind+1)
+						 | "12" ->  
+								 			Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
+                        flush stdout;
+                        let taskidsearch = try  Int64.of_string(input_line stdin) 
+                        	with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+                        	in
+														let rec graphtask var =
+  														if (var < (List.length listlog)) then
+                          		(
+																t_look_up_message (List.nth listlog var) taskidsearch; 
+                      					graphtask (var+1);  
+                              )
+                              else
+                              (
+																Printf.printf "";
+  														)
+                         	in graphtask 0;
+							| "13" ->  
+								 			Printf.printf "\n What messageid do you want to search? (write the message ID [nodeId.localId])\n"; 
+                        flush stdout;
+                        let messageidsearch = input_line stdin in
+												 let varnode = try  Int64.of_string (String.sub messageidsearch 0 (String.index_from messageidsearch 0 '.'))  
+												 		with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+															in nodeidsearch := varnode;
+															let varlocal =  try  Int64.of_string (String.sub messageidsearch ((String.index_from messageidsearch 0 '.')+1) ((String.length messageidsearch)-(String.index_from messageidsearch 0 '.')-1)) 
+																with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+																in localidsearch := varlocal;
+																Printf.printf "\n What is the task for stop the latency?(write the Task ID)\n"; 
+                                flush stdout;
+                                let taskidsearch = try  Int64.of_string(input_line stdin)
+                                	with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+                                	in
+  																	let rec graphtask var =
+          														if (var < (List.length listlog)) then
+                                  		(
+    																		varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+                              					graphtask (var+1);  
+                                      )
+                                      else
+                                      (
+        																Printf.printf "";
+          														);
+                               			in graphtask 0;
+
+															let rec findmessage var =
+																if ( !vartaskidfinded == false) then
+																(
+  																let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
+  																		if ( ((Int64.compare nodeid !nodeidsearch) == 0) && ((Int64.compare localid !localidsearch) == 0)
+  																			 && (io == 'I')) then
+  																				( 
+																						if ((Int64.compare !latency Int64.zero) == 0) then
+																						(
+																							latency := timestamp;
+																							
+																						)
+																						else();
+																						if ( (Int64.compare taskid taskidsearch) == 0) then
+    																				(
+																							latency := Int64.sub timestamp !latency;
+																							vartaskidfinded := true;
+																						) 
+      																			else
+    																				();
+
+  																					let rec outmessage varout =
+  																						let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
+    																						if (ioout == 'O') then
+    																						(
+																									nodeidsearch := nodeidout;
+																									localidsearch := localidout;
+																									
+																									findmessage 0;
+    																							if (  (varout+1) < (List.length !varmessage)) then
+  																								(
+  																									 outmessage (varout+1);
+  																								)
+  																								else 
+																									(
+																									);
+  																									
+    																						)
+    																						else
+    																						(
+    																						);
+																							in outmessage (var+1);
+  																					
+  																				)
+  																				else
+  																				(
+  																					if (  (var+1) < (List.length !varmessage)) then
+    																				(
+    																						findmessage (var+1);
+    																				)
+    																				else ();
+  																				);
+																)
+																else
+																(
+																);
+															in findmessage 0; Printf.printf "Latency is %Ld\n" !latency; vartaskidfinded := false; latency := Int64.zero;
+																					
+							| "14" ->  (* Trace of message *)
+								 			Printf.printf "\n What messageid do you want to search? (write the message ID [nodeId.localId])\n"; 
+                        flush stdout;
+                        let messageidsearch = input_line stdin in
+												 let varnode = try  Int64.of_string (String.sub messageidsearch 0 (String.index_from messageidsearch 0 '.'))  
+												 		with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+															in nodeidsearch := varnode;
+															let varlocal =  try  Int64.of_string (String.sub messageidsearch ((String.index_from messageidsearch 0 '.')+1) ((String.length messageidsearch)-(String.index_from messageidsearch 0 '.')-1)) 
+																with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+																in localidsearch := varlocal;
+																Printf.printf "\n What is the task for stop the latency?(write the Task ID)\n"; 
+                                flush stdout;
+                                let taskidsearch = try  Int64.of_string(input_line stdin)
+                                	with Failure _ -> Printf.printf "\n That's not a number \n"; Int64.minus_one
+                                	in
+  																	let rec graphtask var =
+          														if (var < (List.length listlog)) then
+                                  		(
+    																		varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+                              					graphtask (var+1);  
+                                      )
+                                      else
+                                      (
+        																Printf.printf "";
+          														);
+                               			in graphtask 0;
+
+															let rec findmessage var =
+																if ( !vartaskidfinded == false) then
+																(
+  																let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
+  																		if ( ((Int64.compare nodeid !nodeidsearch) == 0) && ((Int64.compare localid !localidsearch) == 0)
+  																			 && (io == 'I')) then
+  																				( 
+																						
+																						if ( (Int64.compare taskid taskidsearch) == 0) then
+    																				(
+																							vartaskidfinded := true;
+																						) 
+      																			else
+    																				();
+
+  																					let rec outmessage varout =
+  																						let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
+    																						if (ioout == 'O') then
+    																						(
+																									nodeidsearch := nodeidout;
+																									localidsearch := localidout;
+																									Printf.printf "%Ld.%Ld : %Ld   ->   %Ld.%Ld : %Ld\n" nodeid localid timestamp nodeidout localidout timestampout;
+																									findmessage 0;
+    																							if (  (varout+1) < (List.length !varmessage)) then
+  																								(
+  																									 outmessage (varout+1);
+  																								)
+  																								else 
+																									(
+																									);
+  																									
+    																						)
+    																						else
+    																						(
+    																						);
+																							in outmessage (var+1);
+  																					
+  																				)
+  																				else
+  																				(
+  																					if (  (var+1) < (List.length !varmessage)) then
+    																				(
+    																						findmessage (var+1);
+    																				)
+    																				else ();
+  																				);
+																)
+																else
+																(
+																);
+															in findmessage 0; vartaskidfinded := false;
+																	
               | _ -> Printf.printf "It's not a good option.\n"; menu (ind+1)
     in Printf.printf "\n"
             in menu 0;

@@ -136,6 +136,20 @@ let streamentry_secondflag =
 let streamentry_thirdflag =
 function StreamEntry (_, _, _, _, _, _, thirdflag) -> thirdflag (*| _ -> raise Node_Mismatch *)
 
+(* Message Trace Parameters *)
+let messagetrace_messentry =
+	function MessTrace (mess_entry) -> mess_entry (*| _ -> raise Node_Mismatch *)
+
+(* Message Entry Parameters *)
+let messageentry_timestamp =
+  function MessEntry (timestamp, _, _, _) -> timestamp (*| _ -> raise Node_Mismatch *)
+let messageentry_io =
+  function MessEntry (_, io, _, _) -> io (*| _ -> raise Node_Mismatch *)
+let messageentry_nodeid =
+  function MessEntry (_, _, nodeid, _) -> nodeid (*| _ -> raise Node_Mismatch *)
+let messageentry_localid =
+  function MessEntry (_, _, _, localid) -> localid (*| _ -> raise Node_Mismatch *)
+
 
 (* Function with all the nodes *)
 let node_succs node = match node with
@@ -512,6 +526,152 @@ let t_create_graph node taskidsearch workerid =
       | Empty       _ -> [] 
       | _       ->  codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
+
+	
+
+(* Function look up, necessary task id *)
+let t_look_up_message node taskidsearch = 
+  let rec codegen_ ind node = 
+    match node with
+      | TaskBlocked (_, _, task_id, _, sttrace, _) -> 
+    				if ( (Int64.compare task_id taskidsearch) == 0) then
+    				(
+                String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l -> 
+                                      match l with
+																					| ST_MessTrace (mess_trace) ->
+																							(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												""
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												""	
+																										)
+																									| _ -> ("")
+																							)
+                                      		| _ -> ("")
+                                  )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
+						)
+						else
+						(
+							codegen_ (ind+1) (node_succs node)
+						)
+				| TaskEnded (_, task_id, _, _, sttrace, _) ->  
+    				if ( (Int64.compare task_id taskidsearch) == 0) then
+    				(
+                String.concat "" (List.map  (* Read the information about stream of the write's packets *)
+                                  (
+                                  function l -> 
+                                      match l with
+																					| ST_MessTrace (mess_trace) ->
+																							(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												""
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												""	
+																										)
+																									| _ -> ("")
+																							)
+                                      		| _ -> ("")
+                                  )
+                              sttrace ) ^ codegen_ (ind+1) (node_succs node)
+						)
+						else
+						(
+							codegen_ (ind+1) (node_succs node)
+						)
+      | Empty  _ -> ("")   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node
 	
 	
 	
+
+(* Function latency, necessary messageId and taskId *)
+let t_latency_message node nodeidsearch localidsearch = 
+  let rec codegen_ ind node listinfo = 
+    match node with
+					| TaskBlocked (_, _, task_id, _, sttrace, _) -> 
+										let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																																listinfo @ [(task_id, timestamp,io, nodeid, localid)]
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																																listinfo @ [(task_id, timestamp,io, nodeid, localid)]	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (listinfo)
+												) @ loop (var+1)  
+                      )
+                      else
+                      (
+												Printf.printf ""; codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+			| TaskEnded (_, task_id, _, _, sttrace, _) ->  
+										let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																																listinfo @ [(task_id, timestamp,io, nodeid, localid)]	
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																																listinfo @ [(task_id, timestamp,io, nodeid, localid)] 	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (listinfo)
+												) @ loop (var+1)  
+                      )
+                      else
+                      (
+												Printf.printf ""; codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+	    | Empty  _ -> (listinfo)   
+      | _        -> codegen_ (ind+1) (node_succs node) listinfo
+  in codegen_ 0 node []
+          
+					
