@@ -22,7 +22,7 @@ open LogAst
         HASH
         EOF
 
-%token <int64>   NUM
+%token <Big_int.big_int>   NUM
 
 %token <char>  CHARI
                CHARO

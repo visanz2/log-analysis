@@ -10,14 +10,14 @@ in raise Compilation_Error
 
 type net_path = PositionWithoutNum of char (* letter of position (S, P, R or I) *) 
               | PositionWithNum    of char (* letter of position (S, P, R or I) *)
-                                    * int64  (* Number of composition *)
+                                    * Big_int.big_int  (* Number of composition *)
               | Empty
 
 
-type sn_ast = MappingEntries of int64           (* Task ID *)
+type sn_ast = MappingEntries of Big_int.big_int           (* Task ID *)
                               * net_path list (* list of NET-PATH *)
                               * string        (* Box Name *)
-                              * int64           (* Worker ID *)
+                              * Big_int.big_int           (* Worker ID *)
                               * sn_ast
             | Empty
 
@@ -59,7 +59,7 @@ let printlistoptions listoptions =
   Printf.printf "Please selected one of this options:\n";
   let rec loop() = 
     for i = 0 to (List.length listoptions)-1 do
-      Printf.printf "%d .- TaskID -> %Ld \n" (i+1) (List.nth listoptions i)
+      Printf.printf "%d .- TaskID -> %s \n" (i+1) (Big_int.string_of_big_int (List.nth listoptions i))
     done;
     let position = read_int() in
       if (position > (List.length listoptions)) || ( position <= 0 ) then 
@@ -69,7 +69,7 @@ let printlistoptions listoptions =
       )
       else
       (
-        Printf.printf "Selected: option-> %d with taskID-> %Ld\n" position (List.nth listoptions (position-1));
+        Printf.printf "Selected: option-> %d with taskID-> %s\n" position (Big_int.string_of_big_int (List.nth listoptions (position-1)));
         List.nth listoptions (position-1)
       )
 in   loop()
@@ -99,13 +99,13 @@ let t_search_boxname node searchname listsolutions =
                   (
                     if ((List.length listsolutions) == 1) then
                     (
-                      Printf.printf "1 .- %Ld\n" (List.hd listsolutions);
+                      Printf.printf "1 .- %s\n" (Big_int.string_of_big_int (List.hd listsolutions));
                       (List.hd listsolutions)
                     )
                     else
                     (
                       Printf.printf "\nDon't exist a box name with this name.\n"; 
-                      Int64.minus_one
+                      Big_int.minus_big_int (Big_int.unit_big_int)
                     )
                   )
                 
@@ -132,7 +132,7 @@ let t_search_boxname_all node searchname listsolutions =
                   if ((List.length listsolutions) == 0) then
                   (
                     Printf.printf "\nDon't exist a box name with this name.\n"; 
-                    [Int64.minus_one]
+                    [(Big_int.minus_big_int (Big_int.unit_big_int))]
                   )
                   else
                   (

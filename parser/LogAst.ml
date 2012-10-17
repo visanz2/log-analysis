@@ -8,14 +8,14 @@ in raise Compilation_Error
 
 (* - AST - *)
 
-type mess_entry = MessEntry of int64 (* TimeStamp *)
+type mess_entry = MessEntry of Big_int.big_int (* TimeStamp *)
                            * char (* IO *)
-                           * int64 (* Message ID  -> Node ID  *)
-                           * int64 (* Message ID  -> Local ID *)
+                           * Big_int.big_int (* Message ID  -> Node ID  *)
+                           * Big_int.big_int (* Message ID  -> Local ID *)
 
-type list_tag_value = TagValue of int64 (* Tag Value *)
+type list_tag_value = TagValue of Big_int.big_int (* Tag Value *)
 
-type more_information = MoreInformation of int64 (* Tag Id *)
+type more_information = MoreInformation of Big_int.big_int (* Tag Id *)
                       * list_tag_value list (* List of simbolic name*)
 
 type mess_trace  = MessTraceWithInfo of mess_entry (* Message Entry *) 
@@ -23,10 +23,10 @@ type mess_trace  = MessTraceWithInfo of mess_entry (* Message Entry *)
 								 | MessTrace of mess_entry (* Message Entry *) 
                  | Empty
 
-type stream_entry = StreamEntry of int64 (* Stream ID *)
+type stream_entry = StreamEntry of Big_int.big_int (* Stream ID *)
                                  * char (* Mode *)
                                  * char (* State *)
-                                 * int64 (* Items *)
+                                 * Big_int.big_int (* Items *)
                                  * char (* Firrst Flags *)
                                  * char (* Second Flags *)
                                  * char (* Third  Flags *)
@@ -36,27 +36,27 @@ type stream_trace = StreamTrace of stream_entry (* Stream Entry *)
                   | Empty
 
 
-type sn_ast = WorkStarted of int64 (* TimeStamp *)
+type sn_ast = WorkStarted of Big_int.big_int (* TimeStamp *)
                            * sn_ast
-            | WorkWaited  of int64 (* TimeStamp *)
-                           * int64 (* Waiting Stamp *)
+            | WorkWaited  of Big_int.big_int (* TimeStamp *)
+                           * Big_int.big_int (* Waiting Stamp *)
                            * sn_ast
-            | WorkEnded   of int64 (* TimeStamp *)
+            | WorkEnded   of Big_int.big_int (* TimeStamp *)
                            * sn_ast
-            | TaskBlocked of int64 (* TimeStamp *)
+            | TaskBlocked of Big_int.big_int (* TimeStamp *)
                            * char (* Blocked By *)
-                           * int64 (* Task ID *)
-                           * int64 (*Execution Time*)
+                           * Big_int.big_int (* Task ID *)
+                           * Big_int.big_int (*Execution Time*)
                            * stream_trace list(* Stream Trace *)
                            * sn_ast             
-            | TaskEnded   of int64 (* TimeStamp *)
-                           * int64 (* Task ID *)
-                           * int64 (* Execution Time *)
-                           * int64 (* Create Time *)
+            | TaskEnded   of Big_int.big_int (* TimeStamp *)
+                           * Big_int.big_int (* Task ID *)
+                           * Big_int.big_int (* Execution Time *)
+                           * Big_int.big_int (* Create Time *)
                            * stream_trace list(* Stream Trace *)
                            * sn_ast
-            | Information of int64 (* Waiting count *)
-                           * int64 (* Total Waiting Time *)
+            | Information of Big_int.big_int (* Waiting count *)
+                           * Big_int.big_int (* Total Waiting Time *)
                            * sn_ast
             | Empty
 
@@ -179,11 +179,12 @@ let t_exectime node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
-            if (Int64.compare task_id taskidsearch) == 0 then
+            if (Big_int.compare_big_int task_id taskidsearch) == 0 then
             (
-							codegen_ (ind+1) (node_succs node)  ^ "Ended Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time))
-              ^ "\nDiference between the real execution time and execution time: " ^ (Int64.to_string(Int64.sub tims_stamp creation_time)) ^ " - "  
-              ^ (Int64.to_string(exec_time)) ^ " = " ^ (Int64.to_string((Int64.sub (Int64.sub tims_stamp creation_time) exec_time))) ^ "\n\n" 
+							codegen_ (ind+1) (node_succs node)  ^ "Ended Task id: " ^ (Big_int.string_of_big_int taskidsearch) 
+							^ " with real execution time: " ^ (Big_int.string_of_big_int(Big_int.sub_big_int tims_stamp creation_time))
+              ^ "\nDiference between the real execution time and execution time: " ^ (Big_int.string_of_big_int(Big_int.sub_big_int tims_stamp creation_time)) ^ " - "  
+              ^ (Big_int.string_of_big_int(exec_time)) ^ " = " ^ (Big_int.string_of_big_int((Big_int.sub_big_int (Big_int.sub_big_int tims_stamp creation_time) exec_time))) ^ "\n\n" 
             )
             else
             (
@@ -197,11 +198,11 @@ let t_blocktime node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskBlocked (tims_stamp, _, task_id, exec_time, _, _) ->  
-          	if (Int64.compare task_id taskidsearch) == 0 then
+          	if (Big_int.compare_big_int task_id taskidsearch) == 0 then
             (
                 codegen_ (ind+1) (node_succs node) 
-                ^ "Blocked Task id: " ^ (Int64.to_string taskidsearch) ^ " with real execution time in the moment when the task is blocked is: " 
-                ^ (Int64.to_string((Int64.sub tims_stamp exec_time))) ^ "\n\n"
+                ^ "Blocked Task id: " ^ (Big_int.string_of_big_int taskidsearch) ^ " with real execution time in the moment when the task is blocked is: " 
+                ^ (Big_int.string_of_big_int((Big_int.sub_big_int tims_stamp exec_time))) ^ "\n\n"
             )
           	else 
             	codegen_ (ind+1) (node_succs node)              
@@ -231,8 +232,8 @@ let list_of_read_packets l =
   match l with
     | StreamTrace (streamentry) -> 
         if ( (streamentry_mode streamentry) == 'r') then
-          " StreamID: " ^ (Int64.to_string (streamentry_streanid streamentry)) ^ " - State: " 
-          ^ (state_to_str(streamentry_state streamentry)) ^ " - items: " ^ (Int64.to_string (streamentry_items streamentry)) ^ "\n\n"  
+          " StreamID: " ^ (Big_int.string_of_big_int (streamentry_streanid streamentry)) ^ " - State: " 
+          ^ (state_to_str(streamentry_state streamentry)) ^ " - items: " ^ (Big_int.string_of_big_int (streamentry_items streamentry)) ^ "\n\n"  
         else ("")
     | _ -> ("")
 
@@ -241,9 +242,9 @@ let list_of_write_packets l =
   match l with
     | StreamTrace (streamentry) -> 
         if ( (streamentry_mode streamentry) == 'w') then
-          " StreamID: " ^ (Int64.to_string (streamentry_streanid streamentry)) ^ " - State: " 
+          " StreamID: " ^ (Big_int.string_of_big_int (streamentry_streanid streamentry)) ^ " - State: " 
           ^ (state_to_str(streamentry_state streamentry)) ^ " - items: "
-          ^ (Int64.to_string (streamentry_items streamentry)) ^ "\n\n" 
+          ^ (Big_int.string_of_big_int (streamentry_items streamentry)) ^ "\n\n" 
         else ("")
     | _ -> ("")
 
@@ -253,13 +254,13 @@ let t_list_rec_read node taskidsearch =
   let rec codegen_ ind node =
     match node with
       | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->
-          if (Int64.compare task_id taskidsearch) == 0 then
+          if (Big_int.compare_big_int task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
                 codegen_ (ind+1) (node_succs node)
-                ^ "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
-                ^ (Int64.to_string tims_stamp) ^ " made this reads from stream:\n" 
+                ^ "The task ID: " ^ (Big_int.string_of_big_int taskidsearch) ^ " with this time execution: " 
+                ^ (Big_int.string_of_big_int tims_stamp) ^ " made this reads from stream:\n" 
                 ^ "--------------------------------------------------------------------------\n"
                 ^ String.concat "" (List.map list_of_read_packets sttrace) 
             )
@@ -273,13 +274,13 @@ let t_list_rec_read node taskidsearch =
             codegen_ (ind+1) (node_succs node)
           )  
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
-          if (Int64.compare task_id taskidsearch) == 0 then
+          if (Big_int.compare_big_int task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
                 codegen_ (ind+1) (node_succs node)
-                ^ "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
-                ^ (Int64.to_string tims_stamp) ^ " made this reads from stream:\n" 
+                ^ "The task ID: " ^ (Big_int.string_of_big_int taskidsearch) ^ " with this time execution: " 
+                ^ (Big_int.string_of_big_int tims_stamp) ^ " made this reads from stream:\n" 
                 ^ "--------------------------------------------------------------------------\n"
                 ^ String.concat "" (List.map list_of_read_packets sttrace)
             )
@@ -303,13 +304,13 @@ let t_list_rec_write node taskidsearch =
   let rec codegen_ ind node = 
     match node with
       | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->
-          if (Int64.compare task_id taskidsearch) == 0 then
+          if (Big_int.compare_big_int task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
               let _ = codegen_ (ind+1) (node_succs node) in
-                "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
-                ^ (Int64.to_string tims_stamp) ^ " made this write from stream:\n" 
+                "The task ID: " ^ (Big_int.string_of_big_int taskidsearch) ^ " with this time execution: " 
+                ^ (Big_int.string_of_big_int tims_stamp) ^ " made this write from stream:\n" 
                 ^ "--------------------------------------------------------------------------\n"
                 ^ String.concat "" (List.map list_of_write_packets sttrace)             
             )
@@ -323,13 +324,13 @@ let t_list_rec_write node taskidsearch =
             codegen_ (ind+1) (node_succs node)
           )  
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
-          if (Int64.compare task_id taskidsearch) == 0 then
+          if (Big_int.compare_big_int task_id taskidsearch) == 0 then
           (
             if ((List.length sttrace) > 0) then
             (
               let _ = codegen_ (ind+1) (node_succs node) in
-                "The task ID: " ^ (Int64.to_string taskidsearch) ^ " with this time execution: " 
-                ^ (Int64.to_string tims_stamp) ^ " made this write from stream:\n" 
+                "The task ID: " ^ (Big_int.string_of_big_int taskidsearch) ^ " with this time execution: " 
+                ^ (Big_int.string_of_big_int tims_stamp) ^ " made this write from stream:\n" 
                 ^ "--------------------------------------------------------------------------\n"
                 ^ String.concat "" (List.map list_of_write_packets sttrace)
             )
@@ -350,19 +351,18 @@ let t_list_rec_write node taskidsearch =
 
 (* This function needs the Stream ID and it returns the stream trace if it is exist *)
 let t_search_stream node streamidsearch workerid = 
-  let rec codegen_ ind node = 
+  let rec codegen_ ind node =
     match node with
       | TaskBlocked (tims_stamp, _, task_id, _, sttrace, _) ->          
-            let _ = codegen_ (ind+1) (node_succs node) in
               String.concat "" (List.map  (* Read the information about stream of the write's packets *)
                                   (
-                                  function l ->
+                                  function l -> 
                                       match l with
                                           | StreamTrace (streamentry) -> 
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              if ( (Big_int.compare_big_int (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 "WorkerID: " ^ (string_of_int workerid) ^ " - Mode: " ^ (mode_to_str (streamentry_mode streamentry)) ^ " - State: "
-                                                ^ (state_to_str(streamentry_state streamentry)) ^ " - Items: " ^ (Int64.to_string (streamentry_items streamentry)) 
+                                                ^ (state_to_str(streamentry_state streamentry)) ^ " - Items: " ^ (Big_int.string_of_big_int (streamentry_items streamentry)) 
                                                 ^ " - Flags " ^(Char.escaped (streamentry_firstflag streamentry)) ^ (Char.escaped (streamentry_secondflag streamentry))
                                                 ^ (Char.escaped (streamentry_thirdflag streamentry)) ^ "\n\n"  
                                               )
@@ -371,16 +371,15 @@ let t_search_stream node streamidsearch workerid =
                                   )
                               sttrace ) ^ codegen_ (ind+1) (node_succs node)
       | TaskEnded (tims_stamp, task_id, _, _, sttrace, _) -> 
-            let _ = codegen_ (ind+1) (node_succs node) in
               String.concat "" (List.map  (* Read the information about stream of the write's packets *)
                                   (
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) -> 
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              if ( (Big_int.compare_big_int (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 "WorkerID: " ^ (string_of_int workerid) ^ " - Mode: " ^ (mode_to_str (streamentry_mode streamentry)) ^ " - State: "
-                                                ^ (state_to_str(streamentry_state streamentry)) ^ " - Items: " ^ (Int64.to_string (streamentry_items streamentry)) 
+                                                ^ (state_to_str(streamentry_state streamentry)) ^ " - Items: " ^ (Big_int.string_of_big_int (streamentry_items streamentry)) 
                                                 ^ " - Flags " ^(Char.escaped (streamentry_firstflag streamentry)) ^ (Char.escaped (streamentry_secondflag streamentry))
                                                 ^ (Char.escaped (streamentry_thirdflag streamentry)) ^ "\n\n"  
                                               )
@@ -404,7 +403,7 @@ let t_search_stream_read node streamidsearch workerid =
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) -> 
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              if ( (Big_int.compare_big_int (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
 																								if ((streamentry_mode streamentry) == 'r') then
                                                 	string_of_int workerid ^ "/"
@@ -420,7 +419,7 @@ let t_search_stream_read node streamidsearch workerid =
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) -> 
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              if ( (Big_int.compare_big_int (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 if ((streamentry_mode streamentry) == 'r') then
                                                 	string_of_int workerid ^ "/"
@@ -446,7 +445,7 @@ let t_search_stream_write node streamidsearch workerid =
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) -> 																					
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              if ( (Big_int.compare_big_int (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
 																								if ((streamentry_mode streamentry) == 'w') then
                                                 	string_of_int workerid ^ "/"
@@ -462,7 +461,7 @@ let t_search_stream_write node streamidsearch workerid =
                                   function l ->
                                       match l with
                                           | StreamTrace (streamentry) ->
-                                              if ( (Int64.compare (streamentry_streanid streamentry) streamidsearch) == 0 ) then
+                                              if ( (Big_int.compare_big_int (streamentry_streanid streamentry) streamidsearch) == 0 ) then
                                               (
                                                 if ((streamentry_mode streamentry) == 'w') then
                                                 	string_of_int workerid ^ "/"
@@ -490,7 +489,7 @@ let t_last_number_stream node =
                                           | StreamTrace (streamentry) -> 
 																						(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
                                               	streamentry_streanid streamentry
-                                          | _ -> (Int64.zero)
+                                          | _ -> (Big_int.zero_big_int)
                                   )
                               sttrace 
 											 )  @ codegen_ (ind+1) (node_succs node);
@@ -501,7 +500,7 @@ let t_last_number_stream node =
                                       match l with
                                           | StreamTrace (streamentry) -> 
                                                 streamentry_streanid streamentry
-                                          | _ -> (Int64.zero)
+                                          | _ -> (Big_int.zero_big_int)
                                   )
                               sttrace ) @ codegen_ (ind+1) (node_succs node);
       | Empty  _ -> ([])   
@@ -514,10 +513,10 @@ let t_last_number_stream node =
 let t_create_graph node taskidsearch workerid =   
   let rec codegen_ ind node =
     match node with
-		 | TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
-            if (Int64.compare task_id taskidsearch) == 0 then
+			| TaskEnded (tims_stamp, task_id, exec_time, creation_time, _, _) ->  
+            if (Big_int.compare_big_int task_id taskidsearch) == 0 then
             (
-								[( (Int64.add creation_time exec_time), task_id, workerid)]; 
+								[( (Big_int.add_big_int creation_time exec_time), task_id, workerid)]; 
             )
             else
             (
@@ -534,7 +533,7 @@ let t_look_up_message node taskidsearch =
   let rec codegen_ ind node = 
     match node with
       | TaskBlocked (_, _, task_id, _, sttrace, _) -> 
-    				if ( (Int64.compare task_id taskidsearch) == 0) then
+    				if ( (Big_int.compare_big_int task_id taskidsearch) == 0) then
     				(
                 String.concat "" (List.map  (* Read the information about stream of the write's packets *)
                                   (
@@ -547,13 +546,15 @@ let t_look_up_message node taskidsearch =
 																										( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												Printf.printf "Time - %s; io - %c; node %s; local %s\n" (Big_int.string_of_big_int timestamp) io  
+																												(Big_int.string_of_big_int nodeid)  (Big_int.string_of_big_int localid);
 																												""
 																										)
 																									| MessTraceWithInfo (mess_entry, _) -> ( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												Printf.printf "Time - %s; io - %c; node %s; local %s\n"  (Big_int.string_of_big_int timestamp) io 
+																												 (Big_int.string_of_big_int nodeid)  (Big_int.string_of_big_int localid);
 																												""	
 																										)
 																									| _ -> ("")
@@ -567,7 +568,7 @@ let t_look_up_message node taskidsearch =
 							codegen_ (ind+1) (node_succs node)
 						)
 				| TaskEnded (_, task_id, _, _, sttrace, _) ->  
-    				if ( (Int64.compare task_id taskidsearch) == 0) then
+    				if ( (Big_int.compare_big_int task_id taskidsearch) == 0) then
     				(
                 String.concat "" (List.map  (* Read the information about stream of the write's packets *)
                                   (
@@ -580,13 +581,15 @@ let t_look_up_message node taskidsearch =
 																										( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												Printf.printf "Time - %s; io - %c; node %s; local %s\n"  (Big_int.string_of_big_int timestamp) io 
+																												 (Big_int.string_of_big_int nodeid)  (Big_int.string_of_big_int localid);
 																												""
 																										)
 																									| MessTraceWithInfo (mess_entry, _) -> ( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "Time - %Ld; io - %c; node %Ld; local %Ld\n" timestamp io nodeid localid;
+																												Printf.printf "Time - %s; io - %c; node %s; local %s\n"  (Big_int.string_of_big_int timestamp) io 
+																												 (Big_int.string_of_big_int nodeid)  (Big_int.string_of_big_int localid);
 																												""	
 																										)
 																									| _ -> ("")
@@ -692,13 +695,15 @@ let t_all_message node =
 																										( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "TaskId - %Ld; Time - %Ld; io - %c; MessageID - %Ld.%Ld\n" task_id timestamp io nodeid localid;
+																												Printf.printf "TaskId - %s; Time - %s; io - %c; MessageID - %s.%s\n" (Big_int.string_of_big_int task_id) 
+																												(Big_int.string_of_big_int timestamp) io (Big_int.string_of_big_int nodeid) (Big_int.string_of_big_int localid);
 																												""
 																										)
 																									| MessTraceWithInfo (mess_entry, _) -> ( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "TaskId - %Ld; Time - %Ld; io - %c; MessageID - %Ld.%Ld\n" task_id timestamp io nodeid localid;
+																												Printf.printf "TaskId - %s; Time - %s; io - %c; MessageID - %s.%s\n" (Big_int.string_of_big_int task_id) 
+																												(Big_int.string_of_big_int timestamp) io (Big_int.string_of_big_int nodeid) (Big_int.string_of_big_int localid);
 																												""	
 																										)
 																									| _ -> ("")
@@ -718,13 +723,15 @@ let t_all_message node =
 																										( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "TaskId - %Ld; Time - %Ld; io - %c; MessageID - %Ld.%Ld\n" task_id timestamp io nodeid localid;
+																												Printf.printf "TaskId - %s; Time - %s; io - %c; MessageID - %s.%s\n" (Big_int.string_of_big_int task_id) 
+																												(Big_int.string_of_big_int timestamp) io (Big_int.string_of_big_int nodeid) (Big_int.string_of_big_int localid);
 																												""
 																										)
 																									| MessTraceWithInfo (mess_entry, _) -> ( 
 																											match mess_entry with
 																											| MessEntry (timestamp, io, nodeid, localid) ->
-																												Printf.printf "TaskId - %Ld; Time - %Ld; io - %c; MessageID - %Ld.%Ld\n" task_id timestamp io nodeid localid;
+																												Printf.printf "TaskId - %s; Time - %s; io - %c; MessageID - %s.%s\n" (Big_int.string_of_big_int task_id) 
+																												(Big_int.string_of_big_int timestamp) io (Big_int.string_of_big_int nodeid) (Big_int.string_of_big_int localid);
 																												""	
 																										)
 																									| _ -> ("")
@@ -737,3 +744,17 @@ let t_all_message node =
   in codegen_ 0 node
 	
 	
+	
+	
+(* Return the last number of stream *)
+let t_last_number_taskid node = 
+  let rec codegen_ ind node  = 
+    match node with
+      | TaskBlocked (_, _, task_id, _, sttrace, _) ->          
+            task_id :: codegen_ (ind+1) (node_succs node);
+       | TaskEnded (_, task_id, _, _, sttrace, _) ->    
+            task_id :: codegen_ (ind+1) (node_succs node);
+      | Empty  _ -> ([])   
+      | _        -> codegen_ (ind+1) (node_succs node)
+  in codegen_ 0 node
+
