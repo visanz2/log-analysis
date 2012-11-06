@@ -10,41 +10,21 @@ in raise Compilation_Error
 
 type net_path = PositionWithoutNum of char (* letter of position (S, P, R or I) *) 
               | PositionWithNum    of char (* letter of position (S, P, R or I) *)
-                                    * Big_int.big_int  (* Number of composition *)
+                                    * int  (* Number of composition *)
               | Empty
 
 
-type sn_ast = MappingEntries of Big_int.big_int           (* Task ID *)
+type sn_ast = MappingEntries of int          (* Task ID *)
                               * net_path list (* list of NET-PATH *)
                               * string        (* Box Name *)
-                              * Big_int.big_int           (* Worker ID *)
+                              * int           (* Worker ID *)
                               * sn_ast
             | Empty
 
 
 (* Mapping Entries Parameters*)
-let mappingentries_taskid = 
-function MappingEntries (task_id, _, _, _, _) -> task_id     | _ -> raise Node_Mismatch
-let mappingentries_netpath =
-function MappingEntries (_, netpath, _, _, _) -> netpath     | _ -> raise Node_Mismatch
-let mappingentries_boxname =
-function MappingEntries (_, _, boxname, _, _) -> boxname     | _ -> raise Node_Mismatch
-let mappingentries_workerid =
-function MappingEntries (_, _, _, workerid, _) -> workerid   | _ -> raise Node_Mismatch
 let mappingentries_succs =
 function MappingEntries (_, _, _, _, succs) -> succs   | _ -> raise Node_Mismatch
-
-(* Position Without Number Parameters*)
-let positionwithoutnum_letter = 
-  function PositionWithoutNum (letter) -> letter     | _ -> raise Node_Mismatch
-
-
-(* Position With Number Parameters*)
-let positionwithnum_letter =
-  function PositionWithNum (letter, _) -> letter     | _ -> raise Node_Mismatch
-let positionwithnum_number =
-  function PositionWithNum (_, number) -> number     | _ -> raise Node_Mismatch
-
 
 let codegen node = 
   let rec codegen_ ind node =
@@ -59,7 +39,7 @@ let printlistoptions listoptions =
   Printf.printf "Please selected one of this options:\n";
   let rec loop() = 
     for i = 0 to (List.length listoptions)-1 do
-      Printf.printf "%d .- TaskID -> %s \n" (i+1) (Big_int.string_of_big_int (List.nth listoptions i))
+      Printf.printf "%d.- TaskID: %d \n" (i+1) (List.nth listoptions i)
     done;
     let position = read_int() in
       if (position > (List.length listoptions)) || ( position <= 0 ) then 
@@ -69,7 +49,7 @@ let printlistoptions listoptions =
       )
       else
       (
-        Printf.printf "Selected: option-> %d with taskID-> %s\n" position (Big_int.string_of_big_int (List.nth listoptions (position-1)));
+        Printf.printf "Selected: option: %d with taskID: %d\n" position (List.nth listoptions (position-1));
         List.nth listoptions (position-1)
       )
 in   loop()
@@ -99,13 +79,13 @@ let t_search_boxname node searchname listsolutions =
                   (
                     if ((List.length listsolutions) == 1) then
                     (
-                      Printf.printf "1 .- %s\n" (Big_int.string_of_big_int (List.hd listsolutions));
+                      Printf.printf "1.- %d\n" (List.hd listsolutions);
                       (List.hd listsolutions)
                     )
                     else
                     (
                       Printf.printf "\nDon't exist a box name with this name.\n"; 
-                      Big_int.minus_big_int (Big_int.unit_big_int)
+                      (-1)
                     )
                   )
                 
@@ -132,7 +112,7 @@ let t_search_boxname_all node searchname listsolutions =
                   if ((List.length listsolutions) == 0) then
                   (
                     Printf.printf "\nDon't exist a box name with this name.\n"; 
-                    [(Big_int.minus_big_int (Big_int.unit_big_int))]
+                    [(-1)]
                   )
                   else
                   (

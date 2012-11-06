@@ -7,19 +7,27 @@ open ArgAst
 type args = {mutable filename: string}
 
 (* Variables for use the arguments *)
+let varvecall = ref []
+let varvecfather1 = ref []
+let varvecfather2 = ref []
+let varvecfather3 = ref []
+let varvecson1 = ref []
+let varvecson2 = ref []
+let varvecson3 = ref []
+let varvecalltask = ref []
+let varcountfile = ref 0
+let varcount = ref (-1)
 let savename = ref ""
 let father = ref ""
-let resultscommandline = ref ""
 let relationfatherson = ref ""
 let nodeidsearch = ref Big_int.zero_big_int
 let localidsearch = ref Big_int.zero_big_int
 let latency = ref Big_int.zero_big_int
-let vectorgraph = ref []
-let varmessage = ref []
+let varlatency = ref []
 let vartaskidfinded = ref false
 let messageoptions = ref false
-let streamidmax = ref Big_int.zero_big_int
-let taskidmax = ref Big_int.zero_big_int
+let streamidmax = ref 0
+let taskidmax = ref 0
 let resultsdotfile = ref "digraph G {\n"
 let resultgraphfile = ref ""
 let varresultgraphfile = ref ""
@@ -40,10 +48,15 @@ let contains s1 s2 =
 
 let my_max = function
     [] -> invalid_arg "empty list"
-  | x::xs -> List.fold_left Big_int.max_big_int x xs
+  | x::xs -> List.fold_left max x xs
 ;;
 
-
+(* Remove the first element to produce the list *)
+let rem_first l = 
+  match l with            
+  | [] -> []
+  | h::t -> t 
+;;
 
 
 (* Sort the list *)
@@ -61,10 +74,6 @@ let rec sort lst =
 				then elt :: lst 
 				else head :: insert elt tail
 ;;
-
-
-
-
 
 (* Search the log files and the map file*)
 let searchfilesasd mapfile =
@@ -183,20 +192,20 @@ Arg.parse
           Arg.String 
           (
             fun key -> 
-              resultscommandline := !resultscommandline ^ "\n\nEXECUTION TIME FOR TASKS\n" ^ "------------------------\n";
+              Printf.printf "\n\nEXECUTION TIME FOR TASKS\n------------------------\n";
               let rec searchexecutiontime var =
                 if (var < (List.length listlog)) then
                 (
                   let _ = if ( !optionexec == true ) then
                           (
-                            try  resultscommandline := !resultscommandline ^ t_exectime (List.nth listlog var) (Big_int.big_int_of_string (key)); 
+                            try  Printf.printf "%s" (t_exectime (List.nth listlog var) (int_of_string (key))); 
                             with Failure _ -> 
                             (
-                              let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                              let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key []  in
                                 let rec searchealltask ind =
                                   if (ind < (List.length listtaskidsearch)) then
                                   (
-                                    resultscommandline := !resultscommandline ^ t_exectime (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                    Printf.printf "%s" (t_exectime (List.nth listlog var) (List.nth listtaskidsearch ind));
                                     searchealltask (ind+1)
                                   )
                                   else
@@ -206,14 +215,14 @@ Arg.parse
                           )
                           else
                           (
-                            try  resultscommandline := !resultscommandline ^ t_blocktime (List.nth listlog var) (Big_int.big_int_of_string (key)); 
+                            try  Printf.printf "%s" (t_blocktime (List.nth listlog var) (int_of_string (key))); 
                             with Failure _ -> 
                             (
-                              let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                              let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key []  in
                                 let rec searchealltask ind =
                                   if (ind < (List.length listtaskidsearch)) then
                                   (
-                                    resultscommandline := !resultscommandline ^ t_blocktime (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                    Printf.printf "%s" (t_blocktime (List.nth listlog var) (List.nth listtaskidsearch ind));
                                     searchealltask (ind+1)
                                   )
                                   else
@@ -226,7 +235,7 @@ Arg.parse
                 )
                 else
                 ();
-              in searchexecutiontime 0;
+              in searchexecutiontime 0; messageoptions:= true;
           )
       ]
 , (" For the tasks execution time. You must to put the option for blocked task ('b' or 'blocked') or ended task ('e' or 'ended' ) 
@@ -252,20 +261,20 @@ and after put the taskID or the boxname of the task\n"
       Arg.String 
       (
         fun key -> 
-          resultscommandline := !resultscommandline ^ "\n\nLIST TIME OF WHEN THE TASK READ/WRITE IN THE STREAM\n" ^ "---------------------------------------------------\n";
+          Printf.printf "\n\nLIST TIME OF WHEN THE TASK READ/WRITE IN THE STREAM\n---------------------------------------------------\n";
           let rec searchexecutiontime var =
             if (var < (List.length listlog)) then
             (
               if ( !optionlisttime == true ) then
               (
-                try  resultscommandline := !resultscommandline ^ t_list_rec_read (List.nth listlog var) (Big_int.big_int_of_string (key)); 
+                try  Printf.printf "%s" (t_list_rec_read (List.nth listlog var) (int_of_string (key))); 
                 with Failure _ -> 
                 (
-                  let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
+                  let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key []  in
                     let rec searchealltask ind =
                       if (ind < (List.length listtaskidsearch)) then
                       (
-                        resultscommandline := !resultscommandline ^ t_list_rec_read (List.nth listlog var) (List.nth listtaskidsearch ind);
+                        Printf.printf "%s" (t_list_rec_read (List.nth listlog var) (List.nth listtaskidsearch ind));
                         searchealltask (ind+1)
                       )
                       else
@@ -275,14 +284,14 @@ and after put the taskID or the boxname of the task\n"
               )
               else
               (
-                try  resultscommandline := !resultscommandline ^ t_list_rec_write (List.nth listlog var) (Big_int.big_int_of_string (key)); 
+                try  Printf.printf "%s" (t_list_rec_write (List.nth listlog var) (int_of_string (key))); 
                 with Failure _ -> 
                 (
                   let listtaskidsearch = t_search_boxname_all (List.nth listmap 0) key[]  in
                     let rec searchealltask ind =
                       if (ind < (List.length listtaskidsearch)) then
                       (
-                        resultscommandline := !resultscommandline ^ t_list_rec_write (List.nth listlog var) (List.nth listtaskidsearch ind);
+                        Printf.printf "%s" (t_list_rec_write (List.nth listlog var) (List.nth listtaskidsearch ind));
                         searchealltask (ind+1)
                       )
                       else
@@ -294,7 +303,7 @@ and after put the taskID or the boxname of the task\n"
             )
             else
             ();
-          in searchexecutiontime 0;
+          in searchexecutiontime 0; messageoptions:= true;
 
 )], (" Show the time of record time. You must to put the option for read's records ('r' or 'read') or write's records('w' or 'write' ) 
 and the taskID or the boxname of the task\n"
@@ -332,9 +341,8 @@ and the taskID or the boxname of the task\n"
 									match (String.sub key 0 4)  with 
               			| "exec"-> 
 														let listexec =  Str.split (Str.regexp "[%]+") key in
-															resultscommandline := !resultscommandline 
-															^ "--exec " ^ (List.nth listexec 1) ^ " " ^ (List.nth listexec 3) ^ " ->"
-															^ "\n\nEXECUTION TIME FOR TASKS \n" ^ "------------------------\n";
+															Printf.printf "%s" ("--exec " ^ (List.nth listexec 1) ^ " " ^ (List.nth listexec 3) ^ " ->"
+															^ "\n\nEXECUTION TIME FOR TASKS \n" ^ "------------------------\n");
 															let rec searchexecutiontime var =
                                 if (var < (List.length listlog)) then
                                 (
@@ -346,7 +354,7 @@ and the taskID or the boxname of the task\n"
                                      		let rec searchealltask ind =
                                           if (ind < (List.length listtaskidsearch)) then
                                           (
-                                            resultscommandline := !resultscommandline ^ t_exectime (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                            Printf.printf "%s" (t_exectime (List.nth listlog var) (List.nth listtaskidsearch ind));
                                             searchealltask (ind+1)
                                           )
                                           else
@@ -355,7 +363,7 @@ and the taskID or the boxname of the task\n"
                 										)
                 										else
                 										(
-                											resultscommandline := !resultscommandline ^ t_exectime (List.nth listlog var) (Big_int.big_int_of_string ((List.nth listexec 3))); 
+                											Printf.printf "%s" (t_exectime (List.nth listlog var) (int_of_string ((List.nth listexec 3)))); 
                 										)
                 									)
                 									else
@@ -366,7 +374,7 @@ and the taskID or the boxname of the task\n"
                                      		let rec searchealltask ind =
                                           if (ind < (List.length listtaskidsearch)) then
                                           (
-                                            resultscommandline := !resultscommandline ^ t_blocktime (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                            Printf.printf "%s" (t_blocktime (List.nth listlog var) (List.nth listtaskidsearch ind));
                                             searchealltask (ind+1)
                                           )
                                           else
@@ -375,7 +383,7 @@ and the taskID or the boxname of the task\n"
                 										)
                 										else
                 										(
-                											resultscommandline := !resultscommandline ^ t_blocktime (List.nth listlog var) (Big_int.big_int_of_string ((List.nth listexec 3))); 
+                											Printf.printf "%s" (t_blocktime (List.nth listlog var) (int_of_string ((List.nth listexec 3)))); 
                 										)
                 									);
                   								searchexecutiontime (var+1);
@@ -384,10 +392,10 @@ and the taskID or the boxname of the task\n"
 																in searchexecutiontime 0;
   									| "list"-> 
 														let listtime =  Str.split (Str.regexp "[%]+") key in
-															resultscommandline := !resultscommandline 
-															 ^ "--listtime " ^ (List.nth listtime 1)  ^ " " ^ (List.nth listtime 3) ^ " ->"
+															Printf.printf "%s"
+															 ( "--listtime " ^ (List.nth listtime 1)  ^ " " ^ (List.nth listtime 3) ^ " ->"
 															 ^ "\n\nLIST TIME OF WHEN THE TASK READ/WRITE IN THE STREAM\n" 
-															 ^ "---------------------------------------------------\n";	
+															 ^ "---------------------------------------------------\n");	
 															let rec searchexecutiontime var =
                                 if (var < (List.length listlog)) then
                                 (
@@ -399,7 +407,7 @@ and the taskID or the boxname of the task\n"
                                      		let rec searchealltask ind =
                                           if (ind < (List.length listtaskidsearch)) then
                                           (
-                                            resultscommandline := !resultscommandline ^ t_list_rec_read (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                            Printf.printf "%s" (t_list_rec_read (List.nth listlog var) (List.nth listtaskidsearch ind));
                                             searchealltask (ind+1)
                                           )
                                           else
@@ -408,7 +416,7 @@ and the taskID or the boxname of the task\n"
                 										)
                 										else
                 										(
-                											resultscommandline := !resultscommandline ^ t_list_rec_read (List.nth listlog var) (Big_int.big_int_of_string ((List.nth listtime 3))); 
+                											Printf.printf "%s" (t_list_rec_read (List.nth listlog var) (int_of_string ((List.nth listtime 3)))); 
                 										)
                 									)
                 									else
@@ -419,7 +427,7 @@ and the taskID or the boxname of the task\n"
                                      		let rec searchealltask ind =
                                           if (ind < (List.length listtaskidsearch)) then
                                           (
-                                            resultscommandline := !resultscommandline ^ t_list_rec_write (List.nth listlog var) (List.nth listtaskidsearch ind);
+                                            Printf.printf "%s" (t_list_rec_write (List.nth listlog var) (List.nth listtaskidsearch ind));
                                             searchealltask (ind+1)
                                           )
                                           else
@@ -428,7 +436,7 @@ and the taskID or the boxname of the task\n"
                 										)
                 										else
                 										(
-                											resultscommandline := !resultscommandline ^ t_list_rec_write (List.nth listlog var) (Big_int.big_int_of_string (List.nth listtime 3)); 
+                											Printf.printf "%s" (t_list_rec_write (List.nth listlog var) (int_of_string (List.nth listtime 3))); 
                 										)
                 									);
                   								searchexecutiontime (var+1);
@@ -437,13 +445,13 @@ and the taskID or the boxname of the task\n"
 																in searchexecutiontime 0;
   									| "stre"->  
 															let liststream =  Str.split (Str.regexp "[%]+") key in
-																resultscommandline := !resultscommandline 
-																^ "--stream " ^ (List.nth liststream 1) ^ " ->"
-																^ "\n\nLIST OF STREAM TRACE IN THE LOG FILE\n" ^ "------------------------------------\n";
+																Printf.printf "%s"
+																( "--stream " ^ (List.nth liststream 1) ^ " ->"
+																^ "\n\nLIST OF STREAM TRACE IN THE LOG FILE\n" ^ "------------------------------------\n");
 																let rec searchstreams var =
                                   if (var < (List.length listlog)) then
                                   (
-                                    resultscommandline := !resultscommandline ^ t_search_stream (List.nth listlog var) (Big_int.big_int_of_string (List.nth liststream 1)) var ;
+                                    Printf.printf "%s" (t_search_stream (List.nth listlog var) (int_of_string (List.nth liststream 1)) var);
                                     searchstreams (var+1) 
                                   )
                                   else
@@ -470,8 +478,8 @@ and the taskID or the boxname of the task\n"
       (
        fun key -> 
 			 (
-          let taskidsearch = try Big_int.big_int_of_string (key) 
-          	with Failure _ -> Printf.printf "\n That's not a number \n"; (Big_int.minus_big_int (Big_int.unit_big_int))
+          let taskidsearch = try int_of_string (key) 
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
           	in
   						let rec graphtask var =
   							if (var < (List.length listlog)) then
@@ -500,7 +508,7 @@ and the taskID or the boxname of the task\n"
         (
           fun key -> 
             let varnode = try Big_int.big_int_of_string (String.sub key 0 (String.index_from key 0 '.'))  
-					 		with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int ( Big_int.unit_big_int)
+					 		with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
 								in nodeidsearch := varnode;
 								let varlocal =  try Big_int.big_int_of_string (String.sub key ((String.index_from key 0 '.')+1) ((String.length key)-(String.index_from key 0 '.')-1)) 
 									with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
@@ -512,78 +520,49 @@ and the taskID or the boxname of the task\n"
       (
        fun key -> 
 			 (
-          let taskidsearch = try Big_int.big_int_of_string (key)
-          	with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+          let taskidsearch = try int_of_string (key)
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
           	in
+						latency := Big_int.zero_big_int;
 							let rec graphtask var =
-								if (var < (List.length listlog)) then
+								if (var < (List.length listlog) && List.length !varlatency == 0) then
             		(
-									varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+									latency := (t_latency_info (List.nth listlog var) !nodeidsearch !localidsearch);
+									varlatency := !varlatency @ (t_latency_next (List.nth listlog var) !nodeidsearch !localidsearch);
+
         					graphtask (var+1);  
                 )
-                else
-                (
-									Printf.printf "";
-								);
+                else ();
          			in graphtask 0;
-
-							let rec findmessage var =
-								if ( !vartaskidfinded == false) then
+							let rec searching ind =
+								Printf.printf "-";
+								if ( ind > -1 && (List.length !varlatency > 0)) then
 								(
-									let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
-											if ( ((Big_int.compare_big_int nodeid !nodeidsearch) == 0) && ((Big_int.compare_big_int localid !localidsearch) == 0)
-												 && (io == 'I')) then
-													( 
-														if ((Big_int.compare_big_int !latency Big_int.zero_big_int) == 0) then
-														(
-															latency := timestamp;
-															
-														)
-														else();
-														if ( (Big_int.compare_big_int taskid taskidsearch) == 0) then
-														(
-															latency := Big_int.sub_big_int timestamp !latency;
-															vartaskidfinded := true;
-														) 
-														else
-														();
-
-											let rec outmessage varout =
-												let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
-													if (ioout == 'O') then
-													(
-														nodeidsearch := nodeidout;
-														localidsearch := localidout;
-														
-														findmessage 0;
-														if (  (varout+1) < (List.length !varmessage)) then
-														(
-															 outmessage (varout+1);
-														)
-														else 
-														(
-														);
-															
-													)
-													else
-													(
-													);
-												in outmessage (var+1);
-											
-										)
-										else
-										(
-											if (  (var+1) < (List.length !varmessage)) then
-											(
-													findmessage (var+1);
-											)
-											else ();
-										);
-								)
-								else
-								(
-								);
-							in findmessage 0; Printf.printf "\nLatency is %s\n" (Big_int.string_of_big_int !latency); vartaskidfinded := false; messageoptions:= true;
+									let  (task_id, timestamp, nodeid, localid) = List.hd !varlatency in
+									if (task_id == taskidsearch) then
+									(
+										latency := Big_int.sub_big_int timestamp !latency;
+									)
+									else
+									(
+  									varlatency := List.tl !varlatency;
+  									
+      							let rec loop var =
+      								if (var < (List.length listlog)) then
+                  		(
+												let lenghtvar = List.length !varlatency in 
+      									varlatency := !varlatency @ t_latency_next (List.nth listlog var) nodeid localid;
+      									if ( lenghtvar == (List.length !varlatency)) then
+      									(
+              						loop (var+1);
+												)  
+												else ()
+                      )
+                      else();
+               			in loop 0;searching (ind+1);
+									)
+								)else()
+							in searching 0; Printf.printf "\nLatency is %s\n" (Big_int.string_of_big_int !latency); messageoptions:= true;
 			 )
 			)
 		]
@@ -615,77 +594,47 @@ and the taskID or the boxname of the task\n"
       (
        fun key -> 
 			 (
-          let taskidsearch = try Big_int.big_int_of_string(key)
-          	with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+					let taskidsearch = try int_of_string (key)
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
           	in
+						latency := Big_int.zero_big_int;
 							let rec graphtask var =
-								if (var < (List.length listlog)) then
+								if (var < (List.length listlog) && List.length !varlatency == 0) then
             		(
-									varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+									varlatency := !varlatency @ (t_latency_trace (List.nth listlog var) !nodeidsearch !localidsearch);
         					graphtask (var+1);  
                 )
-                else
-                (
-									Printf.printf "\n";
-								);
+                else ();
          			in graphtask 0;
-
-							let rec findmessage var =
-								if ( !vartaskidfinded == false) then
+							let rec searching ind =
+								if ( ind > -1 && (List.length !varlatency > 0)) then
 								(
-									
-									let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
-											if ( ((Big_int.compare_big_int nodeid !nodeidsearch) == 0) && ((Big_int.compare_big_int localid !localidsearch) == 0)
-												 && (io == 'I')) then
-													( 
-														
-														if ( (Big_int.compare_big_int taskid taskidsearch) == 0) then
-														(
-															vartaskidfinded := true;
-														) 
-														else
-														();
-
-												let rec outmessage varout =
-													let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
-														if (ioout == 'O') then
-														(
-															nodeidsearch := nodeidout;
-															localidsearch := localidout;
-															Printf.printf "%s.%s : %s   ->   %s.%s : %s\n" (Big_int.string_of_big_int nodeid) 
-															(Big_int.string_of_big_int localid) (Big_int.string_of_big_int timestamp) 
-															(Big_int.string_of_big_int nodeidout) (Big_int.string_of_big_int localidout) 
-															(Big_int.string_of_big_int timestampout);
-															findmessage 0;
-															if (  (varout+1) < (List.length !varmessage)) then
-															(
-																 outmessage (varout+1);
-															)
-															else 
-															(
-															);
-																
-														)
-														else
-														(
-														);
-													in outmessage (var+1);
-  																					
-													)
-													else
-													(
-														if (  (var+1) < (List.length !varmessage)) then
-														(
-																findmessage (var+1);
-														)
-														else ();
-													);
-								)
-								else
-								(
-								);
-							in findmessage 0; vartaskidfinded := false; messageoptions:= true;
-				
+									let  (task_id, timestamp, nodeid, localid) = List.hd !varlatency in
+									if (task_id == taskidsearch) then
+									(
+										latency := Big_int.sub_big_int timestamp !latency;
+									)
+									else
+									(
+  									varlatency := List.tl !varlatency;
+  									
+      							let rec loop var =
+      								if (var < (List.length listlog)) then
+                  		(
+												let lenghtvar = List.length !varlatency in 
+      									varlatency := !varlatency @ t_latency_trace (List.nth listlog var) nodeid localid;
+      									if ( lenghtvar == (List.length !varlatency)) then
+      									(
+              						loop (var+1);
+												)  
+												else 
+												()
+                      )
+                      else();
+               			in loop 0;searching (ind+1);
+									)
+								)else()
+							in searching 0; messageoptions:= true;
 				)
 			)
 		]
@@ -693,15 +642,6 @@ and the taskID or the boxname of the task\n"
 
 (" Show the trace of one message. This argument needs a MessageID [NodeID.LocalID] and one TaskID. "
   ^ " The Message ID says de begin and the Task ID says the end point. For show all the message until ends, write TaskID = 0.\n"));
-
-
-
-
-
-
-
-
-
 
 
 (* Latency Command Parameter *)
@@ -725,77 +665,48 @@ and the taskID or the boxname of the task\n"
       (
        fun key -> 
 			 (
-				let taskidsearch = try Big_int.big_int_of_string(key)
-          	with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+				let taskidsearch = try int_of_string (key)
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
           	in
+						latency := Big_int.zero_big_int;
 							let rec graphtask var =
-								if (var < (List.length listlog)) then
+								if (var < (List.length listlog) && List.length !varlatency == 0) then
             		(
-									varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+									latency := (t_latency_info (List.nth listlog var) !nodeidsearch !localidsearch);
+									varlatency := !varlatency @ (t_latency_before (List.nth listlog var) !nodeidsearch !localidsearch);
+
         					graphtask (var+1);  
                 )
-                else
-                (
-									Printf.printf "";
-								);
+                else ();
          			in graphtask 0;
-
-							let rec findmessage var =
-									let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
-										if ( !vartaskidfinded == false) then
-										(
-											if ( ((Big_int.compare_big_int nodeid !nodeidsearch) == 0) && ((Big_int.compare_big_int localid !localidsearch) == 0)
-												 && (io == 'O')) then
-													( 
-														if ((Big_int.compare_big_int !latency Big_int.zero_big_int) == 0) then
-														(
-															latency := timestamp;
-															
-														)
-														else();
-														
-														if ( (Big_int.compare_big_int taskid taskidsearch) == 0) then
-														(
-															latency := Big_int.sub_big_int !latency timestamp;
-															vartaskidfinded := true;
-														) 
-														else
-														();
-														
-														let rec outmessage varout =
-															let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
-																if (ioout == 'I') then
-																(
-																	nodeidsearch := nodeidout;
-																	localidsearch := localidout;
-																	findmessage 0;
-																)
-																else
-																(
-																	if (  (varout-1) > 0) then
-																	(
-																		 outmessage (varout-1);
-																	)
-																	else 
-																	(
-																	);
-																);
-															in outmessage (var-1); 
-																			
-												)
-												else
-												(
-													if (  (var+1) < (List.length !varmessage)) then
-													(
-															findmessage (var+1);
-													)
-													else ();
-												);
-										)
-										else
-										(
-										);
-							in findmessage 0; Printf.printf "\nLatency is %s\n" (Big_int.string_of_big_int !latency); vartaskidfinded := false; messageoptions:= true;
+							let rec searching ind =
+								if ( ind > -1 && (List.length !varlatency > 0)) then
+								(
+									let  (task_id, timestamp, nodeid, localid) = List.hd !varlatency in
+									if (task_id == taskidsearch) then
+									(
+										latency := Big_int.sub_big_int !latency timestamp ;
+									)
+									else
+									(
+  									varlatency := List.tl !varlatency;
+  									
+      							let rec loop var =
+      								if (var < (List.length listlog)) then
+                  		(
+												let lenghtvar = List.length !varlatency in 
+      									varlatency := !varlatency @ t_latency_before (List.nth listlog var) nodeid localid;
+      									if ( lenghtvar == (List.length !varlatency)) then
+      									(
+              						loop (var+1);
+												)  
+												else ()
+                      )
+                      else();
+               			in loop 0;searching (ind+1);
+									)
+								)else()
+							in searching 0; Printf.printf "\nLatency is %s\n" (Big_int.string_of_big_int !latency); messageoptions:= true;
 			 )
 			)
 		]
@@ -828,73 +739,47 @@ and the taskID or the boxname of the task\n"
       (
        fun key -> 
 			 (
-          let taskidsearch = try Big_int.big_int_of_string (key)
-          	with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+          let taskidsearch = try int_of_string (key)
+          	with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
           	in
+						latency := Big_int.zero_big_int;
 							let rec graphtask var =
-								if (var < (List.length listlog)) then
+								if (var < (List.length listlog) && List.length !varlatency == 0) then
             		(
-									varmessage := !varmessage @ t_latency_message (List.nth listlog var) nodeidsearch localidsearch;
+									varlatency := !varlatency @ (t_latency_rtrace (List.nth listlog var) !nodeidsearch !localidsearch);
         					graphtask (var+1);  
                 )
-                else
-                (
-									Printf.printf "";
-								);
+                else ();
          			in graphtask 0;
-
-							let rec findmessage var =
-									let (taskid, timestamp, io, nodeid, localid) = (List.nth !varmessage var)  in
-										if ( !vartaskidfinded == false) then
-										(
-											if ( ((Big_int.compare_big_int nodeid !nodeidsearch) == 0) && ((Big_int.compare_big_int localid !localidsearch) == 0)
-												 && (io == 'O')) then
-													( 
-														if ( (Big_int.compare_big_int taskid taskidsearch) == 0) then
-														(
-															vartaskidfinded := true;
-														) 
-														else
-														();
-														
-														let rec outmessage varout =
-															let (taskoutid, timestampout, ioout, nodeidout, localidout) = (List.nth !varmessage varout)  in
-																if (ioout == 'I') then
-																(
-																	nodeidsearch := nodeidout;
-																	localidsearch := localidout;
-																	Printf.printf "%s.%s : %s   ->   %s.%s : %s\n" (Big_int.string_of_big_int nodeid) 
-																	(Big_int.string_of_big_int localid) (Big_int.string_of_big_int timestamp) 
-																	(Big_int.string_of_big_int nodeidout) (Big_int.string_of_big_int localidout) 
-																	(Big_int.string_of_big_int timestampout);
-																	findmessage 0;
-																)
-																else
-																(
-																	if (  (varout-1) > 0) then
-																	(
-																		 outmessage (varout-1);
-																	)
-																	else 
-																	(
-																	);
-																);
-															in outmessage (var-1); 
-																			
-												)
-												else
-												(
-													if (  (var+1) < (List.length !varmessage)) then
-													(
-															findmessage (var+1);
-													)
-													else ();
-												);
-										)
-										else
-										(
-										);
-								in findmessage 0; vartaskidfinded := false; messageoptions:= true;
+							let rec searching ind =
+								if ( ind > -1 && (List.length !varlatency > 0)) then
+								(
+									let  (task_id, timestamp, nodeid, localid) = List.hd !varlatency in
+									if (task_id == taskidsearch) then
+									(
+										latency := Big_int.sub_big_int timestamp !latency;
+									)
+									else
+									(
+  									varlatency := List.tl !varlatency;
+  									
+      							let rec loop var =
+      								if (var < (List.length listlog)) then
+                  		(
+												let lenghtvar = List.length !varlatency in 
+      									varlatency := !varlatency @ t_latency_rtrace (List.nth listlog var) nodeid localid;
+      									if ( lenghtvar == (List.length !varlatency)) then
+      									(
+              						loop (var+1);
+												)  
+												else 
+												()
+                      )
+                      else();
+               			in loop 0;searching (ind+1);
+									)
+								)else()
+							in searching 0; messageoptions:= true;
 				
 				)
 			)
@@ -905,60 +790,83 @@ and the taskID or the boxname of the task\n"
   ^ " The Message ID says de begin and the Task ID says the end point. For show all the message until ends, write TaskID = 0.\n"));
 
 
+
 (* Show all the message Command Parameter *)
-("--shmessage", 
+("--swallmessage", 
       Arg.Unit (* Task Id *)
       (
          fun key -> 
   			 (
             let rec graphtask var =
+							Printf.printf "\nThe WorkerID: %d has the next messages:\n" var;
   							if (var < (List.length listlog)) then
             		(
   								t_all_message (List.nth listlog var); 
         					graphtask (var+1);  
                 )
                 else
-                (
-  								Printf.printf "";
-  							)
+                (	)
            	in graphtask 0; messageoptions:= true;
   				
   			)	
 			)
 , 
 
-(" Show all the message exist in the log file.\n"));
+(" Show all the message exist in the log files.\n"));
+
+
+
+
+(* Show all the message Command Parameter *)
+("--swmessage", 
+      Arg.Int (* Task Id *)
+      (
+         fun key -> 
+  			 (
+						Printf.printf "\nThe WorkerID: %d has the next messages:\n" key;
+						if (key < (List.length listlog)) then
+        		(
+  						t_all_message (List.nth listlog key);
+            )
+            else
+            ();messageoptions := true
+				 )  
+  		)	
+, 
+
+(" Show all the message exist in one worker.\n"));
+
 
 
 ("--stream",
   Arg.String  
   (
     fun key -> 
-      resultscommandline := !resultscommandline ^ "\n\nLIST OF STREAM TRACE IN THE LOG FILE\n" ^ "------------------------------------\n";
-      let streamidsearch = try Big_int.big_int_of_string(key)  
-        with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+      Printf.printf "\n\nLIST OF STREAM TRACE IN THE LOG FILE\n------------------------------------\n";
+      let streamidsearch = try int_of_string(key)  
+        with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
       in
         let rec searchstreams var =
           if (var < (List.length listlog)) then
           (
-            resultscommandline := !resultscommandline ^ t_search_stream (List.nth listlog var) streamidsearch var ;
+            Printf.printf "%s\n" (t_search_stream (List.nth listlog var) streamidsearch var );
             searchstreams (var+1) 
           )
           else
           (
           )
-      in searchstreams 0 
+      in searchstreams 0; messageoptions := true
 
   ),      
 (" Show Who read/write in the stream of program. You must to put the Stream ID \n"
 ^ "For example:\n\t --stream 1 -> Show all the stream message with stream ID = 1\n"
 ^ "\n\t --stream 1 --stream 2 -> Show all the stream message with stream ID = 1 and 2\n")
 );
-
+(*
 ("--save",Arg.Set_string savename, (" Save the result about the command line in one file. After the program finish." 
 ^ "\nOnly is possible to save in one file. The programme get the last save command."
 ^ "\nFor example: \n\t --save filename.txt\n" ));
-
+*)
 ])
 
 (print_tag " ") 
@@ -976,9 +884,8 @@ and the taskID or the boxname of the task\n"
 
 
 (* If the option save is used *)
-  if ((String.length !savename) == 0) then
+ (* if ((String.length !savename) == 0) then
   (
-    Printf.printf "%s" !resultscommandline;
   )
   else
   (
@@ -989,7 +896,7 @@ and the taskID or the boxname of the task\n"
       exit 0
   );
 
-
+*)
 
 (* Principal menu of the program *)
         let rec menu ind =
@@ -1004,16 +911,16 @@ and the taskID or the boxname of the task\n"
           Printf.printf "7.- List of time of write's record time for task searched with Boxname\n";
           Printf.printf "8.- List of time of write's record time for task searched with Task ID\n";
           Printf.printf "9.- Who read/write the specific stream\n";
-					Printf.printf "10.- Save the dependence tree to the program in a dot file\n";
-					Printf.printf "11.- Save the TaskId tree to the program in a dot file\n";
+					Printf.printf "10.- Save the dependence tree to the program in a dot file (Slow if the program is very big)\n";
+					Printf.printf "11.- Save the TaskId tree to the program in a dot file(Slow if the program is very big)\n";
           flush stdout;
           let _ = 
             match (input_line stdin)  with 
               | "0"-> Printf.printf "THE END"; exit 0
               | "1"-> (* Menu 1 - Search execution time of ended task for Boxname *)  
-                      Printf.printf "\n What task do you want to search? (write the Boxname)\n" ;
+                      Printf.printf "\n What task do you want to search? (write the Boxname) %d \n" (List.length listmap) ;
                       flush stdout;
-                      let taskidsearch = t_search_boxname (List.nth listmap 0) (input_line stdin) []  in
+                      let taskidsearch = t_search_boxname (List.hd listmap) (input_line stdin) []  in
                         let rec searchexecutiontime var =
                           if (var < (List.length listlog)) then
                           (
@@ -1037,8 +944,8 @@ and the taskID or the boxname of the task\n"
               | "2"-> (* Menu 2 - Search execution time of ended task for Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try Big_int.big_int_of_string(input_line stdin) 
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+                        let taskidsearch = try int_of_string(input_line stdin) 
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -1088,8 +995,8 @@ and the taskID or the boxname of the task\n"
               | "4"-> (* Menu 4 - Search execution time of blocked task for Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try Big_int.big_int_of_string(input_line stdin)  
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+                        let taskidsearch = try int_of_string(input_line stdin)  
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -1139,8 +1046,8 @@ and the taskID or the boxname of the task\n"
               | "6"-> (* Menu 6 - List of time of read's record time for task searched with Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try Big_int.big_int_of_string (input_line stdin) 
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+                        let taskidsearch = try int_of_string(input_line stdin) 
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -1190,8 +1097,8 @@ and the taskID or the boxname of the task\n"
               | "8"-> (* Menu 8 - List of time of read's record time for task searched with Task ID *)  
                         Printf.printf "\n What task do you want to search? (write the Task ID)\n"; 
                         flush stdout;
-                        let taskidsearch = try Big_int.big_int_of_string (input_line stdin)  
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+                        let taskidsearch = try int_of_string (input_line stdin)  
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
                         in
                           let rec searchexecutiontime var =
                             if (var < (List.length listlog)) then
@@ -1216,8 +1123,8 @@ and the taskID or the boxname of the task\n"
               | "9"-> (* Menu 9 - List of Stream trace with Stream ID specific *)  
 												Printf.printf "\n What Stream do you want to search? (write the Stream ID)\n"; 
                         flush stdout;
-                        let streamidsearch = try Big_int.big_int_of_string (input_line stdin)  
-                        with Failure _ -> Printf.printf "\n That's not a number \n"; Big_int.minus_big_int (Big_int.unit_big_int)
+                        let streamidsearch = try int_of_string (input_line stdin)  
+                        with Failure _ -> Printf.printf "\n That's not a number \n"; (-1)
                         in
                           let rec searchstreams var =
                             if (var < (List.length listlog)) then
@@ -1232,86 +1139,247 @@ and the taskID or the boxname of the task\n"
                           in searchstreams 0 
               | "10" -> (* Menu 10 - Tree of the programme*)
 											let channel = open_out "graph.dot" in
-											let rec streammax var =
-												if (var < (List.length listlog)) then
-                        		( 
+											Printf.printf "Loading all variables:\n";
+												let rec searchstreamsparents var =
+													
+														if ( ( (var * 50) / (List.length listlog) ) > !varcount) then
+														(
+															Printf.printf " %d%% "  ((var * 50) / (List.length listlog));
+															flush stdout;
+															varcount := !varcount + 5;
+														)
+														else
+														();
+														
+  													if (var < (List.length listlog)) then
+                          	(
 															let varmax = (my_max (t_last_number_stream (List.nth listlog var))) in
-  															(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
-  															if (Big_int.compare_big_int !streamidmax varmax < 0 ) then
+																
+  															if (!streamidmax < varmax ) then
+																(
+																	streamidmax := varmax;
+																)
+																else ();
+																
+																varvecall :=  (t_vector_stream_write (List.nth listlog var) var);
+																let totalvarvecall = List.length !varvecall in
+																	let rec partition aux =
+																		if ( aux < totalvarvecall) then
+																		(
+    																	let (streamid, worker) = List.hd !varvecall in
+																			
+																			varvecall := List.remove_assoc streamid !varvecall;
+  																			if ( (streamid mod 3) == 0 ) then
+        																(
+  																				if ( List.mem_assoc streamid !varvecfather1 == false) then
+      																		(
+  																					varvecfather1 := !varvecfather1 @ [(streamid, worker)];
+      																		)
+      																		else();
+  																			)
+  																			else
+  																			(
+  																				if ( (streamid mod 3) == 1 ) then
+          																(
+    																				if ( List.mem_assoc streamid !varvecfather2 == false) then
+        																		(
+    																					varvecfather2 := !varvecfather2 @ [(streamid, worker)];
+        																		)
+        																		else();
+    																			)
+  																			 else
+  																			 (
+  																					if ( List.mem_assoc streamid !varvecfather3 == false) then
+        																		(
+    																					varvecfather3 := !varvecfather3 @ [(streamid, worker)];
+        																		)
+        																		else();
+  																			 );
+  																			);
+																				
+																			partition (aux+1);
+																		)
+																		else()
+																	in partition 0;
+																	
+																varvecall :=  (t_vector_stream_read (List.nth listlog var) var);
+																let totalvarvecall = List.length !varvecall in
+																	let rec partition aux =
+																		if ( aux < totalvarvecall) then
+																		(
+    																	let (streamid, worker) = List.hd !varvecall in
+																			
+																			varvecall := List.remove_assoc streamid !varvecall;
+  																			if ( (streamid mod 3) == 0 ) then
+        																(
+  																				if ( List.mem_assoc streamid !varvecson1 == false) then
+      																		(
+  																					varvecson1 := !varvecson1 @ [(streamid, worker)];
+      																		)
+      																		else();
+  																			)
+  																			else
+  																			(
+  																				if ( (streamid mod 3) == 1 ) then
+          																(
+    																				if ( List.mem_assoc streamid !varvecson2 == false) then
+        																		(
+    																					varvecson2 := !varvecson2 @ [(streamid, worker)];
+        																		)
+        																		else();
+    																			)
+  																			 else
+  																			 (
+  																					if ( List.mem_assoc streamid !varvecson3 == false) then
+        																		(
+    																					varvecson3 := !varvecson3 @ [(streamid, worker)];
+        																		)
+        																		else();
+  																			 );
+  																			);
+																				
+																			partition (aux+1);
+																		)
+																		else()
+																	in partition 0;
+																	
+																	searchstreamsparents (var+1);
+                            )
+                          	else
+                          	(
+														);
+                         	in searchstreamsparents 0;
+
+												varcount := -1;
+												output_string channel ("digraph asde91 {\n ranksep=.75; size = \"7.5,7.5\";
+                                {
+                                node [shape=plaintext, fontsize=16];\n StreamID->");
+																
+  												let rec allstreams var =
+														if ( ( (var * 50) / !streamidmax) > !varcount) then
+														(
+															Printf.printf " %d%% "  (((var * 50) / !streamidmax)+50);
+															flush stdout;
+															varcount := !varcount + 5;
+														)
+														else
+														();
+														
+  													if ( !streamidmax > var ) then
+                          		(
+																output_string channel ((string_of_int var) ^ " -> ");
+																allstreams (var+1);
+  														)
+  													else
+														(
+																output_string channel ((string_of_int var)  ^ ";");
+  													)
+                         	in allstreams 0;
+													
+
+																Printf.printf "LISTS %d %d %d ; %d %d %d\n" (List.length !varvecfather1) (List.length !varvecfather2)
+																(List.length !varvecfather3) (List.length !varvecson1) (List.length !varvecson2) (List.length !varvecson3); 	
+
+													
+													varcount := -1;
+													
+													output_string channel ("\n} { rank = same; \"WorkerId:StreamId\" ; }; node [shape=box];");
+													Printf.printf "\nStart Conversion in pdf:\n";
+													
+  												let rec creategraph var =
+														if ( ( (var * 100) / !streamidmax) > !varcount) then
+														( 
+															Printf.printf "%d%% " ((var * 100) / !streamidmax);
+															flush stdout;
+															varcount := !varcount + 5;
+														)
+														else
+														();
+														if ( !streamidmax > var ) then
+                        		(
+  														if ( List.mem_assoc var !varvecfather1) then
+  														(
+  															father := "\"" ^ (string_of_int (List.assoc var !varvecfather1)) ^ ":" ^ (string_of_int var) ^ "\"";
+																varvecfather1 := List.remove_assoc var !varvecfather1;
+																flush stdout;
+  														)
+  														else
+  														(
+  															if ( List.mem_assoc var !varvecfather2) then
+  															(
+																	father := "\"" ^ (string_of_int (List.assoc var !varvecfather2)) ^ ":" ^ (string_of_int var) ^ "\"";
+																	varvecfather2 := List.remove_assoc var !varvecfather2;
+  															)
+  															else
+  															(
+  																if (List.mem_assoc var !varvecfather3) then
   																(
-  																	streamidmax := varmax;
+																		father := "\"" ^ (string_of_int (List.assoc var !varvecfather3)) ^ ":" ^ (string_of_int var) ^ "\"";
+																		varvecfather3 := List.remove_assoc var !varvecfather3;
   																)
-  																else ();
-  																streammax (var+1);
+  																else
+  																(
+  																);
+  															);
+  														);
+															
+  														(* SON STRUCTURE *)
+															
+															flush stdout;
+															if ((String.length !father) > 0) then
+															( 
+    														flush stdout;
+																if ( List.mem_assoc var !varvecson1) then
+    														(
+    															flush stdout;
+																	output_string channel (!father ^ " -> \"" ^ (string_of_int (List.assoc var !varvecson1)) 
+    																	^ ":" ^ (string_of_int var) ^ "\" \n{ rank = same; \"" ^ (string_of_int var) ^ "\";" ^ !father ^ ";" 
+    																	^  "\"" ^ (string_of_int (List.assoc var !varvecson1)) ^":"^ (string_of_int var) ^ "\" ; }");
+																			varvecson1 := List.remove_assoc var !varvecson1;
     														)
     														else
-    														();
-														in streammax 0;
-														
-
-														resultsdotfile := "digraph asde91 {\n ranksep=.75; size = \"7.5,7.5\";
-                                    {
-                                    node [shape=plaintext, fontsize=16];\n StreamID->";
-    												let rec allstreams var =
-    													if (Big_int.compare_big_int !streamidmax var > 0 ) then
-                            		(
-																	resultsdotfile := !resultsdotfile ^ (Big_int.string_of_big_int var) ^ " -> ";
-																	allstreams (Big_int.add_big_int Big_int.unit_big_int var);
-    														)
-    													else
-															(
-																	resultsdotfile := !resultsdotfile ^ (Big_int.string_of_big_int var)  ^ ";";
-    													)
-                           	in allstreams Big_int.unit_big_int;
-
-														resultsdotfile := !resultsdotfile ^ "\n} { rank = same; \"WorkerId:StreamId\" ; }; node [shape=box];"; 
-											let rec count streamid =
-                    		let rec searchstreamsparents var =
-													if (var < (List.length listlog)) then
-                        		(
-                    					let varfather = (t_search_stream_write (List.nth listlog var) streamid var ) in 
-                      				 	if ((String.length varfather) > 0) then
-                      					(
-  																father := "\"" ^ (String.sub varfather 0 (String.index_from varfather 0 '/')) ^":"^ (Big_int.string_of_big_int streamid) ^ "\"";
-                      					)  
-                      					else ();
-                              	searchstreamsparents (var+1) 
-                            	)
-                            	else
-                            	()
-                       	in searchstreamsparents 0;
-                				let rec searchstreamssons var =
-                  				if (var < (List.length listlog)) then
-                      		(
-  													let son = (t_search_stream_read (List.nth listlog var) streamid var ) in
-                      				 if ((String.length son) > 0) then
-                      					(
-																	relationfatherson := !relationfatherson ^  !father ^ " -> " ^ "\"" ^ (String.sub son 0 (String.index_from son 0 '/')) 
-																	^":"^ (Big_int.string_of_big_int streamid) ^ "\"";
-																	
-																	resultsdotfile := !resultsdotfile ^ "\n{ rank = same; \"" ^ (Big_int.string_of_big_int streamid) ^ "\";" ^ !father ^ ";" 
-																	^  "\"" ^ (String.sub son 0 (String.index_from son 0 '/')) ^":"^ (Big_int.string_of_big_int streamid) ^ "\" ; }";
-                      					)  
-                      					else (); 
-                          	searchstreamssons (var+1) 
-                        	)
-                        	else
-                        	(
-														if ( Big_int.compare_big_int streamid !streamidmax < 0) then
-                  					(
-                  						count (Big_int.add_big_int streamid Big_int.unit_big_int)
-                  					)
-                  					else
-                  					(
+    														(
+    															if ( List.mem_assoc var !varvecson2) then
+    															(
+																		output_string channel (!father ^ " -> \"" ^ (string_of_int (List.assoc var !varvecson2)) 
+    																	^ ":" ^ (string_of_int var) ^ "\" \n{ rank = same; \"" ^ (string_of_int var) ^ "\";" ^ !father ^ ";" 
+    																	^  "\"" ^ (string_of_int (List.assoc var !varvecson2)) ^":"^ (string_of_int var) ^ "\" ; }");
+																			varvecson2 := List.remove_assoc var !varvecson2;
+    															)
+    															else
+    															(
+    																if (List.mem_assoc var !varvecson3) then
+    																(
+																			output_string channel (!father ^ " -> \"" ^ (string_of_int (List.assoc var !varvecson3)) 
+    																	^ ":" ^ (string_of_int var) ^ "\" \n{ rank = same; \"" ^ (string_of_int var) ^ "\";" ^ !father ^ ";" 
+    																	^  "\"" ^ (string_of_int (List.assoc var !varvecson3)) ^":"^ (string_of_int var) ^ "\" ; }");
+																			varvecson3 := List.remove_assoc var !varvecson3;
+    																)	
+    																else
+    																(
+    																);
+    															);
+    														);
+  														)
+  														else();
+															creategraph (var+1);
 														)
-                        	)
-                   		in searchstreamssons 0
-              		in count Big_int.unit_big_int;
-                	 
-                    output_string channel (!resultsdotfile ^ !relationfatherson ^ "\n}");
+														else()
+                         	in creategraph 0; 
+													
+													varcount := -1;
+													
+									(* Finish the file and convert to pdf *)
+
+                    output_string channel ("\n}");
                     close_out channel;
-										resultsdotfile := "";
-										relationfatherson := ""; 
+										varcount := (-1);
+										varvecfather1 := [];
+										varvecson1 := [];
+										varvecfather2 := [];
+										varvecson2 := [];
+										varvecfather3 := [];
+										varvecson3 := [];
                   	let a = Unix.fork () in
                       (
 												match a with
@@ -1333,81 +1401,97 @@ and the taskID or the boxname of the task\n"
 							| "11" -> 
 										let rec taskmax var =
 												if (var < (List.length listlog)) then
-                        		( 
-															let varmax = (my_max (t_last_number_taskid (List.nth listlog var))) in
-  															(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
-  															if (Big_int.compare_big_int !taskidmax varmax < 0 ) then
-  																(
-  																	taskidmax := varmax;
-  																)
-  																else ();
-  																taskmax (var+1);
-    														)
-    														else
-    														();
-														in taskmax 0;
+                       ( 
+													let varmax = (my_max (t_last_number_taskid (List.nth listlog var))) in
+													(*compare x y returns 0 if x is equal to y, a negative integer if x is less than y, and a positive integer if x is greater than y.*)
+													if (!taskidmax < varmax) then
+													(
+														taskidmax := varmax;
+													)
+													else ();
+													taskmax (var+1);
+    										)
+    										else
+    										()
+										in taskmax 0;
+Printf.printf "BEGIN %d\n" !taskidmax;
+flush stdout;
+										let channel = open_out "graphtask.dot" in
+											output_string channel ("digraph asde91 {\n"
+ 												^ "ranksep=.75; size = \"7.5,7.5\";\n{ \n node [shape=plaintext, fontsize=16];\n TimeStamp when finish ->");
 										let rec count taskid =
-                    		let rec graphtask var =
-													if ( (Big_int.compare_big_int taskid !taskidmax) < 0) then
+                   		let rec graphtask var =
+													if ( taskid < !taskidmax) then
 													(
 														if (var < (List.length listlog)) then
                         		(
+															let infosearched = (t_create_graph (List.nth listlog var) taskid var) in
+															if (( List.length infosearched) > 0) then
+															(
+																let (timestamp, taskid, workerid) = List.hd infosearched in
 															
-															vectorgraph := !vectorgraph @ (t_create_graph (List.nth listlog var) taskid var);
-                    					graphtask (var+1);  
-                            )
-                            else
+          											output_string channel ((Big_int.string_of_big_int timestamp) ^ " -> ");
+																
+																varvecalltask := !varvecalltask @ infosearched;
+																Printf.printf "%d  - - var: %d\n" taskid var;
+																flush stdout;
+																count (taskid+1);
+															)
+															else
+															(
+																graphtask (var+1);
+															)
+														)
+                           else
                             (
-															count (Big_int.add_big_int Big_int.unit_big_int taskid);
+															count (taskid+1);
 														)
 													)
 													else ()
                        	in graphtask 0;
-											in count Big_int.zero_big_int; 
-											let vargraph = sort !vectorgraph in
-												let channel = open_out "graphtask.dot" in
-												resultgraphfile := "digraph asde91 {\n"
-																		^ "ranksep=.75; size = \"7.5,7.5\";\n{ \n node [shape=plaintext, fontsize=16];\n TimeStamp when finish ->";
-												let rec alltimestamp var =
-        									if ((List.length !vectorgraph) > (var+1) ) then
+											in count 0; 
+											output_string channel ( "THE END;");
+											Printf.printf "Sorting\n";
+											flush stdout;
+											let vargraph = !varvecalltask in
+											flush stdout;
+												output_string channel ( "\n} { rank = same; \"TaskId:WorkerId\" ; }; node [shape=box];"); 
+												let rec alltimestampson var =
+													Printf.printf "+";
+													flush stdout;
+        									if ((List.length !varvecalltask) > (var) ) then
                         		(
 															let (timestamp, taskid, workerid) = List.nth vargraph var in
-          											resultgraphfile := !resultgraphfile ^ (Big_int.string_of_big_int timestamp) ^ " -> ";
-  															varresultgraphfile := !varresultgraphfile ^ "{ rank = same; " ^ (Big_int.string_of_big_int timestamp)
-  																^ ";\"" ^  (Big_int.string_of_big_int taskid) ^ ":" ^ (string_of_int workerid) ^ "\"; }";
-          											alltimestamp (var+1);
+  															output_string channel ("{ rank = same; " ^ (Big_int.string_of_big_int timestamp)
+  																^ ";\"" ^  (string_of_int taskid) ^ ":" ^ (string_of_int workerid) ^ "\"; }");
+          											alltimestampson (var+1);
         										)
         									else
         									(
-														let (timestamp, taskid, workerid) = List.nth vargraph var in
-        											resultgraphfile := !resultgraphfile ^ (Big_int.string_of_big_int timestamp)  ^ ";";
-															varresultgraphfile := !varresultgraphfile ^ "{ rank = same; " ^ (Big_int.string_of_big_int timestamp)
-																^ ";\"" ^  (Big_int.string_of_big_int taskid) ^ ":" ^ (string_of_int workerid) ^ "\"; }";
         									)
-                       	in alltimestamp 0;
-                    			resultgraphfile := !resultgraphfile ^ "\n} { rank = same; \"TaskId:WorkerId\" ; }; node [shape=box];"; 
-													output_string channel (!resultgraphfile ^ !varresultgraphfile ^ "\n}");
-                    			close_out channel;
-													resultgraphfile := "";
-													varresultgraphfile := "";
+                       	in alltimestampson 0;
+												
+													output_string channel ("\n}");
+													close_out channel;
+ 													resultgraphfile := "";
+ 													varresultgraphfile := "";
 													let a = Unix.fork () in
-                      (
-												match a with
-                        | 0 -> (
-														try
-                              Unix.execvp "dot" [|"dot"; "-Tpdf"; "graphtask.dot"; "-O"|];
-                           	with
-                              _ -> Printf.printf "The results are saving in graphtask.dot. For convert the graph, put in the console 'dot -Tpdf graphtask.dot -O'.";
-            										Printf.printf "The graph show one tree with all the stream numbers and the workerId who works with this streamID." ;
-            										Printf.printf "All the dependences are marked with arrows. For example, x -> y, means that y wait for x because x write in the stream and y read the stream.\n";
-																)
-                        | -1 -> Printf.printf "The results are saving in graphtask.dot. For convert the graph, put in the console 'dot -Tpdf graphtask.dot -O'.";
-            										Printf.printf "The graph show one tree with all the stream numbers and the workerId who works with this streamID." ;
-            										Printf.printf "All the dependences are marked with arrows. For example, x -> y, means that y wait for x because x write in the stream and y read the stream.\n";
-                        | _ -> ignore (Unix.wait ()); Printf.printf "The results are saving in the file graphtask.dot.pdf.\n";
-                     );
-                     menu (ind+1)
-										
+ 													(
+ 														match a with
+                         			| 0 -> 
+																(
+ 																	try Unix.execvp "dot" [|"dot"; "-Tpdf"; "graphtask.dot"; "-O"|];
+                            			with
+                              			_ -> Printf.printf "The results are saving in graphtask.dot. For convert the graph, put in the console 'dot -Tpdf graphtask.dot -O'.";
+																				 Printf.printf "The graph show one tree with all the stream numbers and the workerId who works with this streamID." ;
+             													   Printf.printf "All the dependences are marked with arrows. For example, x -> y, means that y wait for x because x write in the stream and y read the stream.\n";
+ 																)
+                        			| -1 -> Printf.printf "The results are saving in graphtask.dot. For convert the graph, put in the console 'dot -Tpdf graphtask.dot -O'.";
+																			Printf.printf "The graph show one tree with all the stream numbers and the workerId who works with this streamID." ;
+           														Printf.printf "All the dependences are marked with arrows. For example, x -> y, means that y wait for x because x write in the stream and y read the stream.\n";
+                        			| _ -> ignore (Unix.wait ()); Printf.printf "The results are saving in the file graphtask.dot.pdf.\n";
+                     );menu (ind+1)
+						
               | _ -> Printf.printf "It's not a good option.\n"; menu (ind+1)
     in Printf.printf "\n"
             in menu 0;

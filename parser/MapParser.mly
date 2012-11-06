@@ -14,7 +14,7 @@ open MapAst
         HASH
         EOF
 
-%token <Big_int.big_int>   NUM
+%token <int>   						 NUM
 
 %token <char>  SCOMP
 			   			 PCOMP

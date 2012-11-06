@@ -3,38 +3,38 @@ open LogAst
 %}
 
 %token  ZOMBIE
-		DOT
-		SMC
-		COMA
-		COLON
-		OBRACKET
-		DIV
-		CBRACKET
-		LOGVERSION
-		SINCE
-		ZOMBIE
-		WAITCHAR
-		STARTCHAR
-		ENDCHAR
-		TOTALWAIT
-		STSCLOSE
+    		DOT
+    		SMC
+    		COMA
+    		COLON
+    		OBRACKET
+    		DIV
+    		CBRACKET
+    		LOGVERSION
+    		SINCE
+    		ZOMBIE
+    		WAITCHAR
+    		STARTCHAR
+    		ENDCHAR
+    		TOTALWAIT
+    		STSCLOSE
         NDCHOICE
         HASH
         EOF
 
-%token <Big_int.big_int>   NUM
+%token <Big_int.big_int>   BIGNUM
 
 %token <char>  CHARI
                CHARO
                CHARR
-			   BLKANY 
-			   STSCLOSE      
+			   			 BLKANY 
+			   			 STSCLOSE      
                MDREAD
                MDWRITE
-	           FLGNILL
-	           FLGFIRST
-	           FLGSECOND
-	           FLGTHIRD
+	           	 FLGNILL
+	           	 FLGFIRST
+	           	 FLGSECOND
+	           	 FLGTHIRD
                 
 %token WS
 %token NL
@@ -45,13 +45,13 @@ open LogAst
 %%
 
 src: 
-| LOGVERSION NUM DOT NUM OBRACKET SINCE NUM DIV NUM DIV NUM CBRACKET HASH src { $14 }
-| NUM STARTCHAR HASH src { WorkStarted ($1, $4) }
-| NUM WAITCHAR NUM HASH src { WorkWaited ( $1, $3, $5 ) }
-| NUM ENDCHAR HASH src { WorkEnded ($1, $4) }
-| NUM blockedby NUM NUM streamtrace HASH src { TaskBlocked ($1, $2, $3, $4, $5, $7) }
-| NUM ZOMBIE NUM NUM NUM streamtrace HASH src { TaskEnded ( $1, $3, $4, $5, $6, $8) }
-| WAITCHAR STSCLOSE NUM WAITCHAR TOTALWAIT NUM src { Information ($3, $6, $7) }
+| LOGVERSION BIGNUM DOT BIGNUM OBRACKET SINCE BIGNUM DIV BIGNUM DIV BIGNUM CBRACKET HASH src { $14 }
+| BIGNUM STARTCHAR HASH src { WorkStarted ($1, $4) }
+| BIGNUM WAITCHAR BIGNUM HASH src { WorkWaited ( $1, $3, $5 ) }
+| BIGNUM ENDCHAR HASH src { WorkEnded ($1, $4) }
+| BIGNUM blockedby BIGNUM BIGNUM streamtrace HASH src { TaskBlocked ($1, $2, (Big_int.int_of_big_int $3), $4, $5, $7) }
+| BIGNUM ZOMBIE BIGNUM BIGNUM BIGNUM streamtrace HASH src { TaskEnded ( $1, (Big_int.int_of_big_int $3), $4, $5, $6, $8) }
+| WAITCHAR STSCLOSE BIGNUM WAITCHAR TOTALWAIT BIGNUM src { Information ((Big_int.int_of_big_int $3), $6, $7) }
 | EOF {Empty}
 ;
 
@@ -68,7 +68,7 @@ streamtrace:
 ;
 
 streamentry:
-| NUM mode state NUM firstflag secondflag thirdflag { StreamEntry ( $1, $2, $3, $4, $5, $6, $7) }
+| BIGNUM mode state BIGNUM firstflag secondflag thirdflag { StreamEntry ( (Big_int.int_of_big_int $1), $2, $3, (Big_int.int_of_big_int $4), $5, $6, $7) }
 ;
 
 mode:
@@ -105,22 +105,22 @@ messtrace:
 | messentry SMC { MessTrace ($1) }
 | messentry COMA { MessTrace ($1) }
 ;
-
+ 
 moreinformation:
-| NDCHOICE COLON NUM COLON listtagvalue NDCHOICE { MoreInformation ($3, $5) }
+| NDCHOICE COLON BIGNUM COLON listtagvalue NDCHOICE { MoreInformation ($3, $5) }
 ;
 
 listtagvalue:
-| NUM SMC listtagvalue {TagValue $1::$3}
-| NUM COMA listtagvalue {TagValue $1::$3}
-| NUM COLON listtagvalue {TagValue $1::$3}
-| NUM  listtagvalue {TagValue $1::$2}
+| BIGNUM SMC listtagvalue {TagValue $1::$3}
+| BIGNUM COMA listtagvalue {TagValue $1::$3}
+| BIGNUM COLON listtagvalue {TagValue $1::$3}
+| BIGNUM  listtagvalue {TagValue  $1::$2}
 | {[]} 
 ;
 
 
 messentry:
-| NUM io NUM DOT NUM  { MessEntry ( $1, $2, $3, $5) }
+| BIGNUM io BIGNUM DOT BIGNUM  { MessEntry ( $1, $2, $3, $5) }
 ;
 
 io:

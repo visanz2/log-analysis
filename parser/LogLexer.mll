@@ -13,6 +13,7 @@
 
 let digit        = ['0'-'9']
 let intval       = digit+
+let int         = '-'?digit+   
 let nl           = ['\n']
 let ws           = [' ' '\t'] 
  
@@ -46,7 +47,7 @@ rule token = parse
   | '#'                   {inc_lnum lexbuf; HASH}
   | ws+                   {token lexbuf}
   | nl+                   {token lexbuf}
-  | intval as num         {NUM(Big_int.big_int_of_string num)}  
+  | intval as bignum      {BIGNUM(Big_int.big_int_of_string bignum)}   
   | eof                   {EOF}
   | _                     {failwith((Lexing.lexeme lexbuf)  
                     ^ ": syntax error at " 
