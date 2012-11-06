@@ -680,6 +680,7 @@ and the taskID or the boxname of the task\n"
                 else ();
          			in graphtask 0;
 							let rec searching ind =
+								Printf.printf "-";
 								if ( ind > -1 && (List.length !varlatency > 0)) then
 								(
 									let  (task_id, timestamp, nodeid, localid) = List.hd !varlatency in
