@@ -36,6 +36,7 @@ open MapAst
 src: 
 | LOGVERSION NUM DOT NUM OBRACKET SINCE NUM DIV NUM DIV NUM CBRACKET HASH src { $14 }
 | NUM netpath boxnames NUM HASH src {MappingEntries ( $1, $2, $3, $4, $6) }
+| NUM netpath boxnames HASH src {MappingEntriesWithoutWorker ( $1, $2, $3, $5) }
 | EOF {Empty}
 ;
 

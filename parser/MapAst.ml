@@ -19,6 +19,10 @@ type sn_ast = MappingEntries of int          (* Task ID *)
                               * string        (* Box Name *)
                               * int           (* Worker ID *)
                               * sn_ast
+					  | MappingEntriesWithoutWorker of int          (* Task ID *)
+                              * net_path list (* list of NET-PATH *)
+                              * string        (* Box Name *)
+                              * sn_ast
             | Empty
 
 
@@ -26,10 +30,14 @@ type sn_ast = MappingEntries of int          (* Task ID *)
 let mappingentries_succs =
 function MappingEntries (_, _, _, _, succs) -> succs   | _ -> raise Node_Mismatch
 
+let mappingentries_succs =
+function MappingEntriesWithoutWorker (_, _, _, succs) -> succs   | _ -> raise Node_Mismatch
+
 let codegen node = 
   let rec codegen_ ind node =
     match node with
       | MappingEntries _ -> let _ = codegen_ (ind+1) (mappingentries_succs node) in "workerStarted" 
+			| MappingEntriesWithoutWorker _ -> let _ = codegen_ (ind+1) (mappingentries_succs node) in "workerStarted"
       | Empty       _ -> "empty"
   in codegen_ 0 node
 
@@ -59,7 +67,16 @@ in   loop()
 let t_search_boxname node searchname listsolutions = 
   let rec codegen_ ind node listsolutions =
     match node with
-      | MappingEntries (taskid, _, boxname, workerid,_) ->
+      | MappingEntries (taskid, _, boxname, _, _) ->
+                  if ( String.compare searchname boxname ) == 0 then 
+                  ( 
+                    codegen_ (ind+1) (mappingentries_succs node) (taskid::listsolutions); 
+                   )
+                  else
+                  (
+                    codegen_ (ind+1) (mappingentries_succs node) listsolutions; 
+                  );
+			| MappingEntriesWithoutWorker (taskid, _, boxname, _) ->
                   if ( String.compare searchname boxname ) == 0 then 
                   ( 
                     codegen_ (ind+1) (mappingentries_succs node) (taskid::listsolutions); 
@@ -98,7 +115,16 @@ let t_search_boxname node searchname listsolutions =
 let t_search_boxname_all node searchname listsolutions = 
   let rec codegen_ ind node listsolutions =
     match node with
-      | MappingEntries (taskid, _, boxname, workerid,_) ->
+      | MappingEntries (taskid, _, boxname, _, _) ->
+                  if ( String.compare searchname boxname ) == 0 then 
+                  ( 
+                    codegen_ (ind+1) (mappingentries_succs node) (taskid::listsolutions);
+                   )
+                  else
+                  (
+                    codegen_ (ind+1) (mappingentries_succs node) listsolutions; 
+                  );
+			| MappingEntriesWithoutWorker (taskid, _, boxname, _) ->
                   if ( String.compare searchname boxname ) == 0 then 
                   ( 
                     codegen_ (ind+1) (mappingentries_succs node) (taskid::listsolutions);
