@@ -715,7 +715,7 @@ and the taskID or the boxname of the task\n"
 This argument show the time use for arrive the message the one point a another point. 
 In this argument is possible to define if we want the first task inclusive or exclusive and the last task inclusive or exclusive.
 For this we use the arguments optionInitial and optionFinal. If you write true that's mean inclusive, if it is false thant's mean exclusive.
-The TaskIdInitial says de begin and the TaskIdFinakl says the end point. If the latency is 0, there isn't any connection between this tasks. \n"));
+The TaskIdInitial says de begin and the TaskIdFinakl says the end point. \n"));
 
 
 

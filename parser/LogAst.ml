@@ -3,6 +3,8 @@ exception Node_Mismatch
 exception Compilation_Error
 
 let searchingnext = ref 0
+let listmessage = ref []
+let listtimestamp = ref []
 let vartimestamp = ref Big_int.zero_big_int
 
 let trav_error s = 
@@ -565,7 +567,7 @@ let t_look_up_message node taskidsearch =
 														
 																					
 
-(* Function latency, necessary messageId and taskId *)
+(* Function latency, necessary messageId*)
 let t_latency_info node nodeidsearch localidsearch = 
   let rec codegen_ ind node = 
     match node with
@@ -649,6 +651,7 @@ let t_latency_info node nodeidsearch localidsearch =
       | _        -> codegen_ (ind+1) (node_succs node)
   in codegen_ 0 node
 	
+
 
 (* Function latency, necessary messageId and taskId *)
 let t_latency_next node nodeidsearch localidsearch = 
@@ -807,6 +810,208 @@ let t_latency_next node nodeidsearch localidsearch =
 	
 
 (* Function latency, necessary messageId and taskId *)
+let t_messageid_for_taskid node taskidsearch option = 
+  let rec codegen_ ind node listinfo = 
+    match node with
+		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
+							if( task_id == taskidsearch) then
+							(
+				 					let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if (io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if ( option == true) then
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, !vartimestamp)];
+																														)
+																														else
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, timestamp)];
+																														);
+																														loop (var+1) 	
+																													)
+																													else 
+																													(
+																														searchingnext:=0;
+																													  loop (var) 
+																													)
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if (io == 'I') then
+																													(
+																														searchingnext := 1;	
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if ( option == true) then
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, !vartimestamp)];
+																														)
+																														else
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, timestamp)];
+																														);
+																														loop (var+1) 	
+																													)
+																													else
+																													(
+																														searchingnext := 0;
+																														loop (var) 
+																													)
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+								)
+								else
+								(
+									codegen_ (ind+1) (node_succs node) listinfo
+								)
+			| TaskEnded (_, task_id, _, _, sttrace, _) ->  
+							if( task_id == taskidsearch) then
+							(
+										let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ( io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if ( option == true) then
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, !vartimestamp)];
+																														)
+																														else
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, timestamp)];
+																														);
+																														loop (var+1) 	
+																													)
+																													else 
+																													(
+																														searchingnext:=0;
+																													  loop (var)
+																													)
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ( io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if ( option == true) then
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, !vartimestamp)];
+																														)
+																														else
+																														(
+																															listmessage := !listmessage @ [( nodeid, localid, timestamp)];
+																														);
+																														loop (var+1) 	
+																													)
+																													else
+																													(
+																														searchingnext := 0;
+																														loop (var)
+																													)
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+								)
+								else
+								(
+									codegen_ (ind+1) (node_succs node) listinfo
+								)
+	    | Empty  _ -> (listinfo)   
+      | _        -> codegen_ (ind+1) (node_succs node) listinfo
+  in codegen_ 0 node []; !listmessage
+	
+					
+
+(* Function latency, necessary messageId and taskId *)
 let t_latency_before node nodeidsearch localidsearch = 
   let rec codegen_ ind node listinfo = 
     match node with
@@ -960,6 +1165,399 @@ let t_latency_before node nodeidsearch localidsearch =
       | _        -> codegen_ (ind+1) (node_succs node) listinfo
   in codegen_ 0 node []
 	
+	        
+
+(* Function latency, necessary messageId and taskId *)
+let t_latency_history node nodeidsearch localidsearch taskidsearched option =
+	listtimestamp := []; 
+  let rec codegen_ ind node listinfo = 
+    match node with
+		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
+				 					let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														if (taskidsearched == task_id && option == true) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "1.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														
+																														if (taskidsearched == task_id && option == false) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "2.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else 
+																													(
+																														searchingnext := 0;
+																														vartimestamp := Big_int.zero_big_int;
+																													  listinfo
+																													)
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														if (taskidsearched == task_id && option == true) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "4.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														searchingnext := 1;	
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if (taskidsearched == task_id && option == false) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "5.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else
+																													(
+																														searchingnext := 0;
+																														vartimestamp := Big_int.zero_big_int;
+																														listinfo
+																													)
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+			| TaskEnded (_, task_id, _, _, sttrace, _) ->  
+										let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														if (taskidsearched == task_id && option == true) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "7.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if (taskidsearched == task_id && option == false) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "8.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else 
+																													(
+																														searchingnext := 0;
+																														vartimestamp := Big_int.zero_big_int;
+																													  listinfo
+																													)
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														if (taskidsearched == task_id && option == true) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "10.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														vartimestamp := timestamp;
+																														searchingnext := 1;	
+																														loop (var+1)
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														if (taskidsearched == task_id && option == false) then
+            																								(
+            																									(*RETURN TIMESTAMP*)
+																															Printf.printf "11.- %d - %d %s.%s \n" task_id taskidsearched (Big_int.string_of_big_int nodeidsearch)  (Big_int.string_of_big_int localidsearch);
+            																									listtimestamp := !listtimestamp @ [timestamp]; 
+            																								)
+            																								else
+            																								();
+																														
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else
+																													(
+																														searchingnext := 0;
+																														vartimestamp := Big_int.zero_big_int;
+																														listinfo
+																													)
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+	    | Empty  _ -> (listinfo)   
+      | _        -> codegen_ (ind+1) (node_succs node) listinfo
+  in codegen_ 0 node []; !listtimestamp
+
+
+
+let t_latency_route node nodeidsearch localidsearch = 
+  let rec codegen_ ind node listinfo = 
+    match node with
+		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
+				 					let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														Printf.printf "%s\n" (Big_int.string_of_big_int !vartimestamp); 
+																														loop (var+1)
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														listinfo @ [(task_id, !vartimestamp, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else 
+																													(
+																														searchingnext := 0;
+																													  listinfo
+																													)
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;	
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														listinfo @ [(task_id, !vartimestamp, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else
+																													(
+																														searchingnext := 0;
+																														listinfo
+																													)
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+			| TaskEnded (_, task_id, _, _, sttrace, _) ->  
+										let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth sttrace var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														loop (var+1)
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														listinfo @ [(task_id, !vartimestamp, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else 
+																													(
+																														searchingnext := 0;
+																													  listinfo
+																													)
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														vartimestamp := timestamp;
+																														searchingnext := 1;	
+																														loop (var+1)
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													if (!searchingnext == 1 && io =='O') then
+																													(
+																														listinfo @ [(task_id, !vartimestamp, timestamp, nodeid, localid)] @ loop (var+1) 	
+																													)
+																													else
+																													(
+																														searchingnext := 0;
+																														listinfo
+																													)
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+	    | Empty  _ -> (listinfo)   
+      | _        -> codegen_ (ind+1) (node_succs node) listinfo
+  in codegen_ 0 node []
+
 	
  
 (* Function latency, necessary messageId and taskId *)
