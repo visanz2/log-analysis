@@ -667,6 +667,25 @@ and the taskID or the boxname of the task\n"
     													let nextmessages = t_latency_route (List.nth listlog var) nodeidmessage localidmessage in
   															if ( 0 == (List.length nextmessages)) then
               									(
+																	let msg = t_search_input_info (List.nth listlog var)  nodeidmessage localidmessage in
+																	if ((List.length msg) > 0) then
+																	(
+																		let (task_idin, timestampin, nodeidin, localidin) = List.hd (msg) in
+																		if (task_idin == taskidsearchedend) then
+      															(
+																			if (!optionfinal == false) then
+																			(
+																				avglatency := !avglatency @ [ ( Big_int.sub_big_int timestampin timestampinitial)];
+																			)
+																			else();
+      															)
+      															else
+      															()
+																	)
+																	else
+																	(
+																		
+																	);
         												)  
         												else 
         												(

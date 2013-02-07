@@ -655,6 +655,7 @@ let t_latency_info node nodeidsearch localidsearch =
 
 (* Function latency, necessary messageId and taskId *)
 let t_latency_next node nodeidsearch localidsearch = 
+	searchingnext := 0;
   let rec codegen_ ind node listinfo = 
     match node with
 		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
@@ -720,7 +721,7 @@ let t_latency_next node nodeidsearch localidsearch =
 																													)
 																												)	
 																										)
-																									| _ -> (listinfo)
+																									| _ -> (loop (var+1) )
 																							)
 													| _ -> (loop (var+1))
 												)   
@@ -793,7 +794,7 @@ let t_latency_next node nodeidsearch localidsearch =
 																													)
 																												)	
 																										)
-																									| _ -> (listinfo)
+																									| _ -> (loop (var+1) )
 																							)
 													| _ -> (loop (var+1))
 												)   
@@ -811,6 +812,7 @@ let t_latency_next node nodeidsearch localidsearch =
 
 (* Function latency, necessary messageId and taskId *)
 let t_messageid_for_taskid node taskidsearch option = 
+	searchingnext := 0;
   let rec codegen_ ind node listinfo = 
     match node with
 		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
@@ -1013,6 +1015,7 @@ let t_messageid_for_taskid node taskidsearch option =
 
 (* Function latency, necessary messageId and taskId *)
 let t_latency_before node nodeidsearch localidsearch = 
+	searchingnext := 0;
   let rec codegen_ ind node listinfo = 
     match node with
 		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
@@ -1170,6 +1173,7 @@ let t_latency_before node nodeidsearch localidsearch =
 (* Function latency, necessary messageId and taskId *)
 let t_latency_history node nodeidsearch localidsearch taskidsearched option =
 	listtimestamp := []; 
+	searchingnext:= 0;
   let rec codegen_ ind node listinfo = 
     match node with
 		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
@@ -1401,6 +1405,7 @@ let t_latency_history node nodeidsearch localidsearch taskidsearched option =
 
 
 let t_latency_route node nodeidsearch localidsearch = 
+	searchingnext := 0;
   let rec codegen_ ind node listinfo = 
     match node with
 		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
@@ -1423,7 +1428,6 @@ let t_latency_route node nodeidsearch localidsearch =
 																													(
 																														searchingnext := 1;
 																														vartimestamp := timestamp;
-																														Printf.printf "%s\n" (Big_int.string_of_big_int !vartimestamp); 
 																														loop (var+1)
 																													)	
 																													else (loop (var+1))
@@ -1460,7 +1464,8 @@ let t_latency_route node nodeidsearch localidsearch =
 																												(
 																													if (!searchingnext == 1 && io =='O') then
 																													(
-																														listinfo @ [(task_id, !vartimestamp, timestamp, nodeid, localid)] @ loop (var+1) 	
+																														listinfo @ [(task_id, !vartimestamp, timestamp, nodeid, localid)] @ loop (var+1) 
+																															
 																													)
 																													else
 																													(
@@ -1562,6 +1567,7 @@ let t_latency_route node nodeidsearch localidsearch =
  
 (* Function latency, necessary messageId and taskId *)
 let t_latency_trace node nodeidsearch localidsearch = 
+	searchingnext := 0;
   let rec codegen_ ind node listinfo = 
     match node with
 		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
@@ -1737,7 +1743,136 @@ let t_latency_trace node nodeidsearch localidsearch =
 	    | Empty  _ -> (listinfo)   
       | _        -> codegen_ (ind+1) (node_succs node) listinfo
   in codegen_ 0 node []
-          
+
+					
+(* Function latency, necessary messageId and taskId *)
+let t_search_input_info node nodeidsearch localidsearch = 
+	searchingnext := 0;
+  let rec codegen_ ind node listinfo = 
+    match node with
+		  | TaskBlocked (_, _, task_id, _, sttrace, _) ->
+				 					let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth (List.rev sttrace) var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] 	
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													loop (var+1) 
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;	
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] 
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													loop (var+1) 
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+			| TaskEnded (_, task_id, _, _, sttrace, _) ->  
+										let rec loop var =
+											if (var < (List.length sttrace)) then
+                  		(
+												 (
+													match (List.nth (List.rev sttrace) var) with
+														| ST_MessTrace (mess_trace) ->
+																						(
+																							match mess_trace with
+																									| MessTrace (mess_entry) -> 
+																										( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;
+																														vartimestamp := timestamp;
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] 
+																													)	
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													loop (var+1) 
+																												)	
+																																
+																										)
+																									| MessTraceWithInfo (mess_entry, _) -> ( 
+																											match mess_entry with
+																											| MessEntry (timestamp, io, nodeid, localid) ->
+																												if ( !searchingnext == 0) then
+																												(
+																												 if ((Big_int.compare_big_int nodeidsearch nodeid) == 0 && (Big_int.compare_big_int localidsearch localid) == 0 
+																														  && io == 'I') then
+																													(
+																														searchingnext := 1;	
+																														vartimestamp := timestamp;
+																														listinfo @ [(task_id, timestamp, nodeid, localid)] 
+																													)
+																													else (loop (var+1))
+																												)
+																												else
+																												(
+																													loop (var+1) 
+																												)	
+																										)
+																									| _ -> (listinfo)
+																							)
+													| _ -> (loop (var+1))
+												)   
+                      )
+                      else
+                      (
+												codegen_ (ind+1) (node_succs node) listinfo
+											)
+                 		in loop 0
+	    | Empty  _ -> (listinfo)   
+      | _        -> codegen_ (ind+1) (node_succs node) listinfo
+  in codegen_ 0 node []
+	
+				          
 
 (* Function latency, necessary messageId and taskId *)
 let t_latency_rtrace node nodeidsearch localidsearch = 
